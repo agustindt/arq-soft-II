@@ -1,0 +1,182 @@
+services:
+  # Frontend React
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_USERS_API_URL=http://localhost:8081
+      - REACT_APP_ACTIVITIES_API_URL=http://localhost:8082
+      - REACT_APP_SEARCH_API_URL=http://localhost:8083
+    depends_on:
+      - users-api
+      - activities-api
+      - search-api
+    networks:
+      - app-network
+
+  # API de usuarios
+  users-api:
+    build:
+      context: ./backend/users-api
+      dockerfile: Dockerfile
+    ports:
+      - "8081:8081"
+    environment:
+      - PORT=8081
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=root
+      - DB_PASSWORD=rootpassword
+      - DB_NAME=users_db
+      - JWT_SECRET=your-super-secret-jwt-key-here
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # API de actividades (entidad principal)
+  activities-api:
+    build:
+      context: ./backend/activities-api
+      dockerfile: Dockerfile
+    ports:
+      - "8082:8082"
+    environment:
+      - PORT=8082
+      - MONGO_URI=mongodb://mongo:27017/activities_db
+      - USERS_API_URL=http://users-api:8081
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+    depends_on:
+      mongo:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      users-api:
+        condition: service_started
+    networks:
+      - app-network
+
+  # API de búsqueda
+  search-api:
+    build:
+      context: ./backend/search-api
+      dockerfile: Dockerfile
+    ports:
+      - "8083:8083"
+    environment:
+      - PORT=8083
+      - SOLR_URL=http://solr:8983/solr
+      - SOLR_CORE=activities
+      - MEMCACHED_URL=memcached:11211
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - ACTIVITIES_API_URL=http://activities-api:8082
+    depends_on:
+      solr:
+        condition: service_healthy
+      memcached:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      activities-api:
+        condition: service_started
+    networks:
+      - app-network
+
+  # Base de datos MySQL para usuarios
+  mysql:
+    image: mysql:8.0
+    ports:
+      - "3306:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_DATABASE=users_db
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./database/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      timeout: 20s
+      retries: 10
+    networks:
+      - app-network
+
+  # Base de datos MongoDB para actividades
+  mongo:
+    image: mongo:6.0
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
+      - ./database/mongo/init.js:/docker-entrypoint-initdb.d/init.js
+    networks:
+      - app-network
+
+  # RabbitMQ para mensajería
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      - RABBITMQ_DEFAULT_USER=guest
+      - RABBITMQ_DEFAULT_PASS=guest
+    volumes:
+      - rabbitmq_data:/var/lib/rabbitmq
+      - ./config/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json
+      - ./config/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+    healthcheck:
+      test: rabbitmq-diagnostics -q ping
+      interval: 30s
+      timeout: 30s
+      retries: 3
+    networks:
+      - app-network
+
+  # Solr para búsqueda
+  solr:
+    image: solr:9.4
+    ports:
+      - "8983:8983"
+    volumes:
+      - solr_data:/var/solr
+      - ./config/solr/activities:/opt/solr/server/solr/configsets/activities
+    command: >
+      bash -c "
+        solr-precreate activities /opt/solr/server/solr/configsets/activities
+      "
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "curl",
+          "-f",
+          "http://localhost:8983/solr/activities/admin/ping",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    networks:
+      - app-network
+
+  # Memcached para caché distribuida
+  memcached:
+    image: memcached:1.6-alpine
+    ports:
+      - "11211:11211"
+    command: memcached -m 64
+    networks:
+      - app-network
+
+volumes:
+  mysql_data:
+  mongo_data:
+  rabbitmq_data:
+  solr_data:
+
+networks:
+  app-network:
+    driver: bridge
