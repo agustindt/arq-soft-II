@@ -47,6 +47,7 @@ import {
   Cake as CakeIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../../contexts/AuthContext";
+import BirthDatePicker from "../BirthDatePicker";
 import {
   UpdateProfileRequest,
   SocialLinks,
@@ -138,6 +139,14 @@ function ExtendedProfile(): JSX.Element {
     setProfileData((prev) => ({
       ...prev,
       [name]: value === "" ? undefined : value,
+    }));
+  };
+
+  // Handle birth date change
+  const handleBirthDateChange = (date: string | null): void => {
+    setProfileData((prev) => ({
+      ...prev,
+      birth_date: date || undefined,
     }));
   };
 
@@ -482,20 +491,12 @@ function ExtendedProfile(): JSX.Element {
                 />
               </Grid>
               <Grid item xs={12} md={6}>
-                <TextField
-                  fullWidth
-                  label="Birth Date"
-                  name="birth_date"
-                  type="date"
-                  value={profileData.birth_date || ""}
-                  onChange={handleProfileChange}
+                <BirthDatePicker
+                  value={profileData.birth_date || null}
+                  onChange={handleBirthDateChange}
                   disabled={!editMode}
-                  InputLabelProps={{
-                    shrink: true,
-                  }}
-                  InputProps={{
-                    startAdornment: <CakeIcon sx={{ mr: 1, color: 'text.secondary' }} />,
-                  }}
+                  label="Birth Date"
+                  fullWidth
                 />
               </Grid>
               <Grid item xs={12} md={6}>
