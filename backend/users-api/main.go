@@ -59,6 +59,9 @@ func main() {
 			auth.POST("/refresh", handlers.RefreshToken)
 		}
 
+		// Ruta especial para crear usuario root (solo disponible si no existe root)
+		api.POST("/admin/create-root", handlers.CreateRoot)
+
 		// Rutas públicas de usuarios
 		users := api.Group("/users")
 		{
@@ -80,18 +83,40 @@ func main() {
 				profile.DELETE("/avatar", handlers.DeleteAvatar)      // DELETE /api/v1/profile/avatar
 			}
 		}
+
+		// Rutas de administración (requieren JWT + rol admin)
+		admin := api.Group("/admin")
+		admin.Use(middleware.JWTAuth())
+		admin.Use(middleware.RequireRole("admin"))
+		{
+			// Gestión de usuarios
+			admin.GET("/users", handlers.ListAllUsers)                    // GET /api/v1/admin/users
+			admin.POST("/users", handlers.CreateUser)                     // POST /api/v1/admin/users
+			admin.PUT("/users/:id/role", handlers.UpdateUserRole)         // PUT /api/v1/admin/users/:id/role
+			admin.PUT("/users/:id/status", handlers.UpdateUserStatus)     // PUT /api/v1/admin/users/:id/status
+			admin.GET("/stats", handlers.GetSystemStats)                  // GET /api/v1/admin/stats
+		}
+
+		// Rutas solo para root users
+		root := api.Group("/admin")
+		root.Use(middleware.JWTAuth())
+		root.Use(middleware.RequireRole("root"))
+		{
+			root.DELETE("/users/:id", handlers.DeleteUser)                // DELETE /api/v1/admin/users/:id
+		}
 	}
 
 	// Ruta raíz
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "Users API - Sports Activities Platform",
-			"version": "2.0.0",
+			"version": "2.1.0",
 			"features": []string{
 				"JWT Authentication",
 				"Extended User Profiles",
 				"Avatar Upload/Management",
-				"Role-based Access (Coming Soon)",
+				"Role-based Access Control",
+				"Admin User Management",
 				"Email Verification (Coming Soon)",
 			},
 			"endpoints": gin.H{
@@ -110,6 +135,15 @@ func main() {
 				"upload_avatar":      "POST /api/v1/profile/avatar (protected)",
 				"delete_avatar":      "DELETE /api/v1/profile/avatar (protected)",
 				
+				// Admin endpoints (admin role required)
+				"create_root":        "POST /api/v1/admin/create-root (public, secret key required)",
+				"admin_users_list":   "GET /api/v1/admin/users (admin)",
+				"admin_create_user":  "POST /api/v1/admin/users (admin)",
+				"admin_update_role":  "PUT /api/v1/admin/users/:id/role (admin)",
+				"admin_update_status": "PUT /api/v1/admin/users/:id/status (admin)",
+				"admin_stats":        "GET /api/v1/admin/stats (admin)",
+				"admin_delete_user":  "DELETE /api/v1/admin/users/:id (root only)",
+				
 				// Static files
 				"avatars":            "GET /uploads/avatars/:filename",
 			},
@@ -126,11 +160,13 @@ func main() {
 		port = "8081"
 	}
 
-	log.Printf("🚀 Users API v2.0.0 starting on port %s", port)
+	log.Printf("🚀 Users API v2.1.0 starting on port %s", port)
 	log.Printf("📊 Database connected and migrated successfully")
 	log.Printf("🔐 JWT authentication enabled")
 	log.Printf("👤 Extended user profiles with avatar support")
 	log.Printf("📸 Avatar upload/management enabled")
+	log.Printf("🛡️  Role-based access control (user/moderator/admin/root)")
+	log.Printf("👨‍💼 Admin user management system")
 	log.Printf("📋 Available endpoints:")
 	log.Printf("   • API Documentation: http://localhost:%s/", port)
 	log.Printf("   • Health Check: http://localhost:%s/api/v1/health", port)
@@ -138,6 +174,8 @@ func main() {
 	log.Printf("   • Login: POST http://localhost:%s/api/v1/auth/login", port)
 	log.Printf("   • Profile: GET/PUT http://localhost:%s/api/v1/profile", port)
 	log.Printf("   • Avatar Upload: POST http://localhost:%s/api/v1/profile/avatar", port)
+	log.Printf("   • Create Root: POST http://localhost:%s/api/v1/admin/create-root", port)
+	log.Printf("   • Admin Panel: GET http://localhost:%s/api/v1/admin/users", port)
 
 	if err := router.Run(":" + port); err != nil {
 		log.Fatal("Failed to start server:", err)
