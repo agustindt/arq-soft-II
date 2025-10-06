@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -14,9 +14,14 @@ import {
   Grid,
 } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
+import { FormErrors, RegisterRequest } from '../../types';
 
-function Register() {
-  const [formData, setFormData] = useState({
+interface FormData extends RegisterRequest {
+  confirmPassword: string;
+}
+
+function Register(): JSX.Element {
+  const [formData, setFormData] = useState<FormData>({
     email: '',
     username: '',
     password: '',
@@ -24,26 +29,26 @@ function Register() {
     firstName: '',
     lastName: '',
   });
-  const [formErrors, setFormErrors] = useState({});
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
   const { register, loading, error, clearError } = useAuth();
   const navigate = useNavigate();
 
   // Manejar cambios en los inputs
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
-    
+
     // Limpiar errores cuando el usuario empiece a escribir
     if (formErrors[name]) {
-      setFormErrors(prev => ({
+      setFormErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: '',
       }));
     }
-    
+
     // Limpiar error general
     if (error) {
       clearError();
@@ -51,8 +56,8 @@ function Register() {
   };
 
   // Validar formulario
-  const validateForm = () => {
-    const errors = {};
+  const validateForm = (): boolean => {
+    const errors: FormErrors = {};
 
     // Email
     if (!formData.email.trim()) {
@@ -67,7 +72,8 @@ function Register() {
     } else if (formData.username.length < 3) {
       errors.username = 'Username must be at least 3 characters';
     } else if (!/^[a-zA-Z0-9_]+$/.test(formData.username)) {
-      errors.username = 'Username can only contain letters, numbers, and underscores';
+      errors.username =
+        'Username can only contain letters, numbers, and underscores';
     }
 
     // Password
@@ -99,21 +105,23 @@ function Register() {
   };
 
   // Manejar envío del formulario
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
-    const result = await register({
+    const registerData: RegisterRequest = {
       email: formData.email,
       username: formData.username,
       password: formData.password,
       firstName: formData.firstName,
       lastName: formData.lastName,
-    });
-    
+    };
+
+    const result = await register(registerData);
+
     if (result.success) {
       navigate('/dashboard');
     }
@@ -132,11 +140,22 @@ function Register() {
       >
         <Card sx={{ width: '100%', mt: 4 }}>
           <CardContent sx={{ p: 4 }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}
+            >
               <Typography component="h1" variant="h4" gutterBottom>
                 Sports Activities
               </Typography>
-              <Typography component="h2" variant="h5" color="textSecondary" gutterBottom>
+              <Typography
+                component="h2"
+                variant="h5"
+                color="textSecondary"
+                gutterBottom
+              >
                 Create Account
               </Typography>
             </Box>
@@ -263,12 +282,12 @@ function Register() {
               <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="body2">
                   Already have an account?{' '}
-                  <Link 
-                    to="/login" 
-                    style={{ 
-                      textDecoration: 'none', 
+                  <Link
+                    to="/login"
+                    style={{
+                      textDecoration: 'none',
                       color: '#2196f3',
-                      fontWeight: 'bold'
+                      fontWeight: 'bold',
                     }}
                   >
                     Sign In

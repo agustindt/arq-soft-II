@@ -1,10 +1,22 @@
-import axios from 'axios';
+import axios, { AxiosInstance, AxiosResponse } from 'axios';
+import {
+  LoginRequest,
+  RegisterRequest,
+  LoginResponse,
+  User,
+  UpdateProfileRequest,
+  ChangePasswordRequest,
+  ApiResponse,
+  UsersResponse,
+  HealthResponse,
+} from '../types';
 
 // Configuración base de Axios
-const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:8081/api/v1';
+const API_BASE_URL =
+  process.env.REACT_APP_API_URL || 'http://localhost:8081/api/v1';
 
 // Crear instancia de axios con configuración base
-const api = axios.create({
+const api: AxiosInstance = axios.create({
   baseURL: API_BASE_URL,
   headers: {
     'Content-Type': 'application/json',
@@ -15,7 +27,7 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('token');
-    if (token) {
+    if (token && config.headers) {
       config.headers.Authorization = `Bearer ${token}`;
     }
     return config;
@@ -27,7 +39,7 @@ api.interceptors.request.use(
 
 // Interceptor para manejar respuestas y errores
 api.interceptors.response.use(
-  (response) => {
+  (response: AxiosResponse) => {
     return response;
   },
   (error) => {
@@ -43,8 +55,8 @@ api.interceptors.response.use(
 // Servicio de autenticación
 export const authService = {
   // Login
-  async login(email, password) {
-    const response = await api.post('/auth/login', {
+  async login(email: string, password: string): Promise<ApiResponse<LoginResponse>> {
+    const response = await api.post<ApiResponse<LoginResponse>>('/auth/login', {
       email,
       password,
     });
@@ -52,8 +64,8 @@ export const authService = {
   },
 
   // Register
-  async register(userData) {
-    const response = await api.post('/auth/register', {
+  async register(userData: RegisterRequest): Promise<ApiResponse<LoginResponse>> {
+    const response = await api.post<ApiResponse<LoginResponse>>('/auth/register', {
       email: userData.email,
       username: userData.username,
       password: userData.password,
@@ -64,20 +76,20 @@ export const authService = {
   },
 
   // Refresh Token
-  async refreshToken() {
-    const response = await api.post('/auth/refresh');
+  async refreshToken(): Promise<ApiResponse<{ token: string }>> {
+    const response = await api.post<ApiResponse<{ token: string }>>('/auth/refresh');
     return response.data;
   },
 
   // Get Profile
-  async getProfile() {
-    const response = await api.get('/profile');
+  async getProfile(): Promise<User> {
+    const response = await api.get<ApiResponse<User>>('/profile');
     return response.data.data;
   },
 
   // Update Profile
-  async updateProfile(profileData) {
-    const response = await api.put('/profile', {
+  async updateProfile(profileData: UpdateProfileRequest): Promise<ApiResponse<User>> {
+    const response = await api.put<ApiResponse<User>>('/profile', {
       first_name: profileData.firstName,
       last_name: profileData.lastName,
     });
@@ -85,8 +97,8 @@ export const authService = {
   },
 
   // Change Password
-  async changePassword(passwordData) {
-    const response = await api.put('/profile/password', {
+  async changePassword(passwordData: ChangePasswordRequest): Promise<ApiResponse<null>> {
+    const response = await api.put<ApiResponse<null>>('/profile/password', {
       current_password: passwordData.currentPassword,
       new_password: passwordData.newPassword,
     });
@@ -94,8 +106,8 @@ export const authService = {
   },
 
   // Health Check
-  async healthCheck() {
-    const response = await api.get('/health');
+  async healthCheck(): Promise<HealthResponse> {
+    const response = await api.get<HealthResponse>('/health');
     return response.data;
   },
 };
@@ -103,14 +115,14 @@ export const authService = {
 // Servicio de usuarios (endpoints públicos)
 export const userService = {
   // Get all users
-  async getUsers(page = 1, limit = 10) {
-    const response = await api.get(`/users?page=${page}&limit=${limit}`);
+  async getUsers(page: number = 1, limit: number = 10): Promise<ApiResponse<UsersResponse>> {
+    const response = await api.get<ApiResponse<UsersResponse>>(`/users?page=${page}&limit=${limit}`);
     return response.data;
   },
 
   // Get user by ID
-  async getUserById(id) {
-    const response = await api.get(`/users/${id}`);
+  async getUserById(id: number): Promise<ApiResponse<User>> {
+    const response = await api.get<ApiResponse<User>>(`/users/${id}`);
     return response.data;
   },
 };

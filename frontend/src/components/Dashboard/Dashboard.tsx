@@ -26,26 +26,27 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 import { userService, authService } from '../../services/authService';
+import { DashboardStats, ApiStatus, User } from '../../types';
 
-function Dashboard() {
+function Dashboard(): JSX.Element {
   const { user } = useAuth();
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
     recentUsers: [],
   });
-  const [apiStatus, setApiStatus] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [apiStatus, setApiStatus] = useState<ApiStatus | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
     loadDashboardData();
   }, []);
 
-  const loadDashboardData = async () => {
+  const loadDashboardData = async (): Promise<void> => {
     setLoading(true);
     try {
       // Cargar estadísticas
       const usersResponse = await userService.getUsers(1, 5);
-      
+
       setStats({
         totalUsers: usersResponse.data.pagination.total,
         recentUsers: usersResponse.data.users,
@@ -57,7 +58,7 @@ function Dashboard() {
         status: 'online',
         message: healthResponse.message,
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error loading dashboard data:', error);
       setApiStatus({
         status: 'error',
@@ -68,7 +69,7 @@ function Dashboard() {
     }
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string): string => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -95,8 +96,8 @@ function Dashboard() {
 
       {/* API Status */}
       {apiStatus && (
-        <Alert 
-          severity={apiStatus.status === 'online' ? 'success' : 'error'} 
+        <Alert
+          severity={apiStatus.status === 'online' ? 'success' : 'error'}
           sx={{ mb: 3 }}
         >
           API Status: {apiStatus.message}
@@ -109,7 +110,9 @@ function Dashboard() {
           <Card>
             <CardContent>
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Avatar sx={{ width: 56, height: 56, mr: 2, bgcolor: 'primary.main' }}>
+                <Avatar
+                  sx={{ width: 56, height: 56, mr: 2, bgcolor: 'primary.main' }}
+                >
                   {user?.first_name?.charAt(0)?.toUpperCase()}
                 </Avatar>
                 <Box>
@@ -119,24 +122,24 @@ function Dashboard() {
                   <Typography variant="body2" color="textSecondary">
                     @{user?.username}
                   </Typography>
-                  <Chip 
-                    label={user?.is_active ? 'Active' : 'Inactive'} 
+                  <Chip
+                    label={user?.is_active ? 'Active' : 'Inactive'}
                     color={user?.is_active ? 'success' : 'default'}
                     size="small"
                     sx={{ mt: 1 }}
                   />
                 </Box>
               </Box>
-              
+
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                 <EmailIcon sx={{ mr: 1, color: 'text.secondary' }} />
                 <Typography variant="body2">{user?.email}</Typography>
               </Box>
-              
+
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <CalendarIcon sx={{ mr: 1, color: 'text.secondary' }} />
                 <Typography variant="body2">
-                  Member since {formatDate(user?.created_at)}
+                  Member since {formatDate(user?.created_at || '')}
                 </Typography>
               </Box>
             </CardContent>
@@ -150,7 +153,7 @@ function Dashboard() {
               <Typography variant="h6" gutterBottom>
                 Platform Stats
               </Typography>
-              
+
               <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                 <GroupIcon sx={{ mr: 2, color: 'primary.main' }} />
                 <Box>
@@ -160,7 +163,7 @@ function Dashboard() {
                   </Typography>
                 </Box>
               </Box>
-              
+
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <ActivityIcon sx={{ mr: 2, color: 'secondary.main' }} />
                 <Box>
@@ -181,30 +184,21 @@ function Dashboard() {
               <Typography variant="h6" gutterBottom>
                 Quick Actions
               </Typography>
-              
+
               <Button
                 fullWidth
                 variant="outlined"
                 sx={{ mb: 1 }}
-                onClick={() => window.location.href = '/profile'}
+                onClick={() => (window.location.href = '/profile')}
               >
                 Edit Profile
               </Button>
-              
-              <Button
-                fullWidth
-                variant="outlined"
-                disabled
-                sx={{ mb: 1 }}
-              >
+
+              <Button fullWidth variant="outlined" disabled sx={{ mb: 1 }}>
                 Create Activity (Soon)
               </Button>
-              
-              <Button
-                fullWidth
-                variant="outlined"
-                disabled
-              >
+
+              <Button fullWidth variant="outlined" disabled>
                 View Analytics (Soon)
               </Button>
             </CardContent>
@@ -218,34 +212,42 @@ function Dashboard() {
               <Typography variant="h6" gutterBottom>
                 Recent Users
               </Typography>
-              
+
               {stats.recentUsers.length > 0 ? (
                 <Paper variant="outlined">
                   <List>
-                    {stats.recentUsers.map((recentUser, index) => (
+                    {stats.recentUsers.map((recentUser: User, index: number) => (
                       <React.Fragment key={recentUser.id}>
                         <ListItem>
                           <ListItemAvatar>
                             <Avatar sx={{ bgcolor: 'secondary.main' }}>
-                              {recentUser.first_name?.charAt(0)?.toUpperCase() || 
-                               recentUser.username?.charAt(0)?.toUpperCase()}
+                              {recentUser.first_name
+                                ?.charAt(0)
+                                ?.toUpperCase() ||
+                                recentUser.username?.charAt(0)?.toUpperCase()}
                             </Avatar>
                           </ListItemAvatar>
                           <ListItemText
                             primary={`${recentUser.first_name} ${recentUser.last_name}`}
                             secondary={
                               <Box>
-                                <Typography variant="body2" color="textSecondary">
+                                <Typography
+                                  variant="body2"
+                                  color="textSecondary"
+                                >
                                   @{recentUser.username} • {recentUser.email}
                                 </Typography>
-                                <Typography variant="caption" color="textSecondary">
+                                <Typography
+                                  variant="caption"
+                                  color="textSecondary"
+                                >
                                   Joined {formatDate(recentUser.created_at)}
                                 </Typography>
                               </Box>
                             }
                           />
-                          <Chip 
-                            label={recentUser.is_active ? 'Active' : 'Inactive'} 
+                          <Chip
+                            label={recentUser.is_active ? 'Active' : 'Inactive'}
                             color={recentUser.is_active ? 'success' : 'default'}
                             size="small"
                           />

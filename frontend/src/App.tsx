@@ -1,5 +1,10 @@
-import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import React, { ReactNode } from 'react';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+} from 'react-router-dom';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 import { Box } from '@mui/material';
@@ -26,29 +31,34 @@ const theme = createTheme({
   },
 });
 
+// Props para rutas protegidas
+interface RouteProps {
+  children: ReactNode;
+}
+
 // Componente para rutas protegidas
-function ProtectedRoute({ children }) {
+function ProtectedRoute({ children }: RouteProps): JSX.Element {
   const { isAuthenticated, loading } = useAuth();
-  
+
   if (loading) {
     return <div>Loading...</div>;
   }
-  
-  return isAuthenticated ? children : <Navigate to="/login" />;
+
+  return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
 }
 
 // Componente para rutas públicas (solo accesibles si NO estás logueado)
-function PublicRoute({ children }) {
+function PublicRoute({ children }: RouteProps): JSX.Element {
   const { isAuthenticated, loading } = useAuth();
-  
+
   if (loading) {
     return <div>Loading...</div>;
   }
-  
-  return !isAuthenticated ? children : <Navigate to="/dashboard" />;
+
+  return !isAuthenticated ? <>{children}</> : <Navigate to="/dashboard" />;
 }
 
-function AppContent() {
+function AppContent(): JSX.Element {
   const { isAuthenticated } = useAuth();
 
   return (
@@ -57,47 +67,47 @@ function AppContent() {
       <Box component="main" sx={{ flexGrow: 1, p: isAuthenticated ? 3 : 0 }}>
         <Routes>
           {/* Rutas públicas */}
-          <Route 
-            path="/login" 
+          <Route
+            path="/login"
             element={
               <PublicRoute>
                 <Login />
               </PublicRoute>
-            } 
+            }
           />
-          <Route 
-            path="/register" 
+          <Route
+            path="/register"
             element={
               <PublicRoute>
                 <Register />
               </PublicRoute>
-            } 
+            }
           />
-          
+
           {/* Rutas protegidas */}
-          <Route 
-            path="/dashboard" 
+          <Route
+            path="/dashboard"
             element={
               <ProtectedRoute>
                 <Dashboard />
               </ProtectedRoute>
-            } 
+            }
           />
-          <Route 
-            path="/profile" 
+          <Route
+            path="/profile"
             element={
               <ProtectedRoute>
                 <Profile />
               </ProtectedRoute>
-            } 
+            }
           />
-          
+
           {/* Redirecciones */}
-          <Route 
-            path="/" 
+          <Route
+            path="/"
             element={
-              <Navigate to={isAuthenticated ? "/dashboard" : "/login"} />
-            } 
+              <Navigate to={isAuthenticated ? '/dashboard' : '/login'} />
+            }
           />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
@@ -106,7 +116,7 @@ function AppContent() {
   );
 }
 
-function App() {
+function App(): JSX.Element {
   return (
     <ThemeProvider theme={theme}>
       <CssBaseline />

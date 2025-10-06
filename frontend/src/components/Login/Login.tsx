@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import {
   Box,
@@ -13,32 +13,38 @@ import {
   Divider,
 } from '@mui/material';
 import { useAuth } from '../../contexts/AuthContext';
+import { FormErrors } from '../../types';
 
-function Login() {
-  const [formData, setFormData] = useState({
+interface FormData {
+  email: string;
+  password: string;
+}
+
+function Login(): JSX.Element {
+  const [formData, setFormData] = useState<FormData>({
     email: '',
     password: '',
   });
-  const [formErrors, setFormErrors] = useState({});
+  const [formErrors, setFormErrors] = useState<FormErrors>({});
   const { login, loading, error, clearError } = useAuth();
   const navigate = useNavigate();
 
   // Manejar cambios en los inputs
-  const handleChange = (e) => {
+  const handleChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
-    
+
     // Limpiar errores cuando el usuario empiece a escribir
     if (formErrors[name]) {
-      setFormErrors(prev => ({
+      setFormErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: '',
       }));
     }
-    
+
     // Limpiar error general
     if (error) {
       clearError();
@@ -46,8 +52,8 @@ function Login() {
   };
 
   // Validar formulario
-  const validateForm = () => {
-    const errors = {};
+  const validateForm = (): boolean => {
+    const errors: FormErrors = {};
 
     if (!formData.email.trim()) {
       errors.email = 'Email is required';
@@ -66,15 +72,15 @@ function Login() {
   };
 
   // Manejar envío del formulario
-  const handleSubmit = async (e) => {
+  const handleSubmit = async (e: FormEvent<HTMLFormElement>): Promise<void> => {
     e.preventDefault();
-    
+
     if (!validateForm()) {
       return;
     }
 
     const result = await login(formData.email, formData.password);
-    
+
     if (result.success) {
       navigate('/dashboard');
     }
@@ -93,11 +99,22 @@ function Login() {
       >
         <Card sx={{ width: '100%', mt: 4 }}>
           <CardContent sx={{ p: 4 }}>
-            <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+            <Box
+              sx={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+              }}
+            >
               <Typography component="h1" variant="h4" gutterBottom>
                 Sports Activities
               </Typography>
-              <Typography component="h2" variant="h5" color="textSecondary" gutterBottom>
+              <Typography
+                component="h2"
+                variant="h5"
+                color="textSecondary"
+                gutterBottom
+              >
                 Sign In
               </Typography>
             </Box>
@@ -124,7 +141,7 @@ function Login() {
                 helperText={formErrors.email}
                 disabled={loading}
               />
-              
+
               <TextField
                 margin="normal"
                 required
@@ -161,12 +178,12 @@ function Login() {
               <Box sx={{ textAlign: 'center' }}>
                 <Typography variant="body2">
                   Don't have an account?{' '}
-                  <Link 
-                    to="/register" 
-                    style={{ 
-                      textDecoration: 'none', 
+                  <Link
+                    to="/register"
+                    style={{
+                      textDecoration: 'none',
                       color: '#2196f3',
-                      fontWeight: 'bold'
+                      fontWeight: 'bold',
                     }}
                   >
                     Sign Up
@@ -184,7 +201,8 @@ function Login() {
               Demo Credentials:
             </Typography>
             <Typography variant="body2" color="textSecondary">
-              Email: test@example.com<br />
+              Email: test@example.com
+              <br />
               Password: password123
             </Typography>
           </CardContent>

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, ChangeEvent, FormEvent } from 'react';
 import {
   Box,
   Typography,
@@ -23,56 +23,61 @@ import {
   Cancel as CancelIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
+import { FormErrors, Message, UpdateProfileRequest, ChangePasswordRequest } from '../../types';
 
-function Profile() {
+interface PasswordFormData extends ChangePasswordRequest {
+  confirmPassword: string;
+}
+
+function Profile(): JSX.Element {
   const { user, updateProfile, changePassword } = useAuth();
-  const [editMode, setEditMode] = useState(false);
-  const [passwordDialogOpen, setPasswordDialogOpen] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [message, setMessage] = useState({ type: '', text: '' });
-  
-  const [profileData, setProfileData] = useState({
+  const [editMode, setEditMode] = useState<boolean>(false);
+  const [passwordDialogOpen, setPasswordDialogOpen] = useState<boolean>(false);
+  const [loading, setLoading] = useState<boolean>(false);
+  const [message, setMessage] = useState<Message>({ type: '', text: '' });
+
+  const [profileData, setProfileData] = useState<UpdateProfileRequest>({
     firstName: user?.first_name || '',
     lastName: user?.last_name || '',
   });
 
-  const [passwordData, setPasswordData] = useState({
+  const [passwordData, setPasswordData] = useState<PasswordFormData>({
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
   });
 
-  const [passwordErrors, setPasswordErrors] = useState({});
+  const [passwordErrors, setPasswordErrors] = useState<FormErrors>({});
 
   // Manejar cambios en el perfil
-  const handleProfileChange = (e) => {
+  const handleProfileChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
-    setProfileData(prev => ({
+    setProfileData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
   // Manejar cambios en contraseña
-  const handlePasswordChange = (e) => {
+  const handlePasswordChange = (e: ChangeEvent<HTMLInputElement>): void => {
     const { name, value } = e.target;
-    setPasswordData(prev => ({
+    setPasswordData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
-    
+
     // Limpiar errores
     if (passwordErrors[name]) {
-      setPasswordErrors(prev => ({
+      setPasswordErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: '',
       }));
     }
   };
 
   // Validar contraseña
-  const validatePassword = () => {
-    const errors = {};
+  const validatePassword = (): boolean => {
+    const errors: FormErrors = {};
 
     if (!passwordData.currentPassword) {
       errors.currentPassword = 'Current password is required';
@@ -95,20 +100,20 @@ function Profile() {
   };
 
   // Guardar perfil
-  const handleSaveProfile = async () => {
+  const handleSaveProfile = async (): Promise<void> => {
     setLoading(true);
     setMessage({ type: '', text: '' });
-    
+
     try {
       const result = await updateProfile(profileData);
-      
+
       if (result.success) {
         setEditMode(false);
         setMessage({ type: 'success', text: 'Profile updated successfully!' });
       } else {
-        setMessage({ type: 'error', text: result.error });
+        setMessage({ type: 'error', text: result.error || 'Update failed' });
       }
-    } catch (error) {
+    } catch (error: any) {
       setMessage({ type: 'error', text: 'Failed to update profile' });
     } finally {
       setLoading(false);
@@ -116,19 +121,19 @@ function Profile() {
   };
 
   // Cambiar contraseña
-  const handleChangePassword = async () => {
+  const handleChangePassword = async (): Promise<void> => {
     if (!validatePassword()) {
       return;
     }
 
     setLoading(true);
-    
+
     try {
       const result = await changePassword({
         currentPassword: passwordData.currentPassword,
         newPassword: passwordData.newPassword,
       });
-      
+
       if (result.success) {
         setPasswordDialogOpen(false);
         setPasswordData({
@@ -138,9 +143,9 @@ function Profile() {
         });
         setMessage({ type: 'success', text: 'Password changed successfully!' });
       } else {
-        setMessage({ type: 'error', text: result.error });
+        setMessage({ type: 'error', text: result.error || 'Password change failed' });
       }
-    } catch (error) {
+    } catch (error: any) {
       setMessage({ type: 'error', text: 'Failed to change password' });
     } finally {
       setLoading(false);
@@ -148,7 +153,7 @@ function Profile() {
   };
 
   // Cancelar edición
-  const handleCancelEdit = () => {
+  const handleCancelEdit = (): void => {
     setProfileData({
       firstName: user?.first_name || '',
       lastName: user?.last_name || '',
@@ -156,7 +161,7 @@ function Profile() {
     setEditMode(false);
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string): string => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'long',
@@ -173,8 +178,8 @@ function Profile() {
       </Typography>
 
       {message.text && (
-        <Alert 
-          severity={message.type} 
+        <Alert
+          severity={message.type as 'success' | 'error'}
           sx={{ mb: 3 }}
           onClose={() => setMessage({ type: '', text: '' })}
         >
@@ -187,7 +192,14 @@ function Profile() {
         <Grid item xs={12} md={8}>
           <Card>
             <CardContent>
-              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  mb: 3,
+                }}
+              >
                 <Typography variant="h6">Profile Information</Typography>
                 {!editMode ? (
                   <Button
@@ -226,7 +238,7 @@ function Profile() {
                     value={editMode ? profileData.firstName : user?.first_name}
                     onChange={handleProfileChange}
                     disabled={!editMode}
-                    variant={editMode ? "outlined" : "filled"}
+                    variant={editMode ? 'outlined' : 'filled'}
                   />
                 </Grid>
                 <Grid item xs={12} sm={6}>
@@ -237,7 +249,7 @@ function Profile() {
                     value={editMode ? profileData.lastName : user?.last_name}
                     onChange={handleProfileChange}
                     disabled={!editMode}
-                    variant={editMode ? "outlined" : "filled"}
+                    variant={editMode ? 'outlined' : 'filled'}
                   />
                 </Grid>
                 <Grid item xs={12}>
@@ -287,20 +299,20 @@ function Profile() {
                   mx: 'auto',
                   mb: 2,
                   bgcolor: 'primary.main',
-                  fontSize: '2rem'
+                  fontSize: '2rem',
                 }}
               >
                 {user?.first_name?.charAt(0)?.toUpperCase()}
               </Avatar>
-              
+
               <Typography variant="h6" gutterBottom>
                 {user?.first_name} {user?.last_name}
               </Typography>
-              
+
               <Typography variant="body2" color="textSecondary" gutterBottom>
                 @{user?.username}
               </Typography>
-              
+
               <Typography variant="body2" color="textSecondary" gutterBottom>
                 {user?.email}
               </Typography>
@@ -311,7 +323,7 @@ function Profile() {
                 Member since
               </Typography>
               <Typography variant="body2">
-                {formatDate(user?.created_at)}
+                {formatDate(user?.created_at || '')}
               </Typography>
             </CardContent>
           </Card>
@@ -319,8 +331,8 @@ function Profile() {
       </Grid>
 
       {/* Change Password Dialog */}
-      <Dialog 
-        open={passwordDialogOpen} 
+      <Dialog
+        open={passwordDialogOpen}
         onClose={() => setPasswordDialogOpen(false)}
         maxWidth="sm"
         fullWidth
@@ -363,13 +375,13 @@ function Profile() {
           </Box>
         </DialogContent>
         <DialogActions>
-          <Button 
+          <Button
             onClick={() => setPasswordDialogOpen(false)}
             disabled={loading}
           >
             Cancel
           </Button>
-          <Button 
+          <Button
             onClick={handleChangePassword}
             variant="contained"
             disabled={loading}

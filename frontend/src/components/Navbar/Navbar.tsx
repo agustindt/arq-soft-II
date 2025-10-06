@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, MouseEvent } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   AppBar,
@@ -19,27 +19,27 @@ import {
 } from '@mui/icons-material';
 import { useAuth } from '../../contexts/AuthContext';
 
-function Navbar() {
-  const [anchorEl, setAnchorEl] = useState(null);
+function Navbar(): JSX.Element {
+  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
-  const handleMenuOpen = (event) => {
+  const handleMenuOpen = (event: MouseEvent<HTMLButtonElement>): void => {
     setAnchorEl(event.currentTarget);
   };
 
-  const handleMenuClose = () => {
+  const handleMenuClose = (): void => {
     setAnchorEl(null);
   };
 
-  const handleLogout = () => {
+  const handleLogout = (): void => {
     logout();
     handleMenuClose();
     navigate('/login');
   };
 
-  const handleNavigation = (path) => {
+  const handleNavigation = (path: string): void => {
     navigate(path);
     handleMenuClose();
   };
@@ -52,11 +52,11 @@ function Navbar() {
         <Typography
           variant="h6"
           component="div"
-          sx={{ 
-            flexGrow: 1, 
+          sx={{
+            flexGrow: 1,
             cursor: 'pointer',
             display: 'flex',
-            alignItems: 'center'
+            alignItems: 'center',
           }}
           onClick={() => navigate('/dashboard')}
         >
@@ -70,7 +70,10 @@ function Navbar() {
             startIcon={<DashboardIcon />}
             onClick={() => navigate('/dashboard')}
             sx={{
-              backgroundColor: location.pathname === '/dashboard' ? 'rgba(255,255,255,0.1)' : 'transparent'
+              backgroundColor:
+                location.pathname === '/dashboard'
+                  ? 'rgba(255,255,255,0.1)'
+                  : 'transparent',
             }}
           >
             Dashboard
@@ -86,9 +89,9 @@ function Navbar() {
             color="inherit"
           >
             <Avatar sx={{ width: 32, height: 32, bgcolor: 'secondary.main' }}>
-              {user?.first_name?.charAt(0)?.toUpperCase() || 
-               user?.username?.charAt(0)?.toUpperCase() || 
-               'U'}
+              {user?.first_name?.charAt(0)?.toUpperCase() ||
+                user?.username?.charAt(0)?.toUpperCase() ||
+                'U'}
             </Avatar>
           </IconButton>
 
@@ -110,7 +113,7 @@ function Navbar() {
               sx: {
                 mt: 1,
                 minWidth: 200,
-              }
+              },
             }}
           >
             <Box sx={{ px: 2, py: 1 }}>
