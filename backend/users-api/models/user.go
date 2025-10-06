@@ -5,6 +5,7 @@ import (
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
+	"strings"
 )
 
 // SocialLinks estructura para enlaces de redes sociales
@@ -40,6 +41,76 @@ func (s *SocialLinks) Scan(value interface{}) error {
 	return json.Unmarshal(bytes, s)
 }
 
+// DateOnly estructura para manejar fechas sin tiempo
+type DateOnly struct {
+	time.Time
+}
+
+// UnmarshalJSON implementa json.Unmarshaler para manejar fechas en formato "YYYY-MM-DD"
+func (d *DateOnly) UnmarshalJSON(data []byte) error {
+	// Eliminar comillas del JSON
+	str := strings.Trim(string(data), `"`)
+	
+	// Si es string vacío o null, retornar sin error
+	if str == "" || str == "null" {
+		return nil
+	}
+	
+	// Parsear la fecha en formato YYYY-MM-DD
+	parsed, err := time.Parse("2006-01-02", str)
+	if err != nil {
+		return err
+	}
+	
+	d.Time = parsed
+	return nil
+}
+
+// MarshalJSON implementa json.Marshaler para devolver la fecha en formato "YYYY-MM-DD"
+func (d DateOnly) MarshalJSON() ([]byte, error) {
+	if d.Time.IsZero() {
+		return []byte("null"), nil
+	}
+	return []byte(`"` + d.Time.Format("2006-01-02") + `"`), nil
+}
+
+// Value implementa driver.Valuer para GORM
+func (d DateOnly) Value() (driver.Value, error) {
+	if d.Time.IsZero() {
+		return nil, nil
+	}
+	return d.Time.Format("2006-01-02"), nil
+}
+
+// Scan implementa sql.Scanner para GORM
+func (d *DateOnly) Scan(value interface{}) error {
+	if value == nil {
+		d.Time = time.Time{}
+		return nil
+	}
+	
+	switch v := value.(type) {
+	case time.Time:
+		d.Time = v
+	case string:
+		parsed, err := time.Parse("2006-01-02", v)
+		if err != nil {
+			return err
+		}
+		d.Time = parsed
+	case []byte:
+		parsed, err := time.Parse("2006-01-02", string(v))
+		if err != nil {
+			return err
+		}
+		d.Time = parsed
+	default:
+		return errors.New("cannot scan into DateOnly")
+	}
+	
+	return nil
+}
+
 type User struct {
 	ID               uint         `json:"id" gorm:"primaryKey"`
 	Email            string       `json:"email" gorm:"type:varchar(255);uniqueIndex;not null"`
@@ -52,7 +123,7 @@ type User struct {
 	AvatarURL        *string      `json:"avatar_url" gorm:"type:varchar(500)"`
 	Bio              *string      `json:"bio" gorm:"type:text"`
 	Phone            *string      `json:"phone" gorm:"type:varchar(20)"`
-	BirthDate        *time.Time   `json:"birth_date" gorm:"type:date"`
+	BirthDate        *DateOnly    `json:"birth_date" gorm:"type:date"`
 	Location         *string      `json:"location" gorm:"type:varchar(200)"`
 	Gender           *string      `json:"gender" gorm:"type:enum('male','female','other','prefer_not_to_say');default:null"`
 	
@@ -87,7 +158,7 @@ type UserResponse struct {
 	AvatarURL        *string      `json:"avatar_url"`
 	Bio              *string      `json:"bio"`
 	Phone            *string      `json:"phone"`
-	BirthDate        *time.Time   `json:"birth_date"`
+	BirthDate        *DateOnly    `json:"birth_date"`
 	Location         *string      `json:"location"`
 	Gender           *string      `json:"gender"`
 	Height           *float32     `json:"height"`
@@ -125,7 +196,7 @@ type UpdateProfileRequest struct {
 	AvatarURL       *string     `json:"avatar_url" validate:"omitempty,url"`
 	Bio             *string     `json:"bio" validate:"omitempty,max=500"`
 	Phone           *string     `json:"phone" validate:"omitempty,e164"`
-	BirthDate       *time.Time  `json:"birth_date"`
+	BirthDate       *DateOnly   `json:"birth_date"`
 	Location        *string     `json:"location" validate:"omitempty,max=200"`
 	Gender          *string     `json:"gender" validate:"omitempty,oneof=male female other prefer_not_to_say"`
 	Height          *float32    `json:"height" validate:"omitempty,min=50,max=300"`
