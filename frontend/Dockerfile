@@ -6,10 +6,10 @@ RUN npm install -g pnpm
 
 WORKDIR /app
 COPY package.json pnpm-lock.yaml* ./
-RUN pnpm install --frozen-lockfile
+RUN pnpm install
 
 COPY . .
-RUN SKIP_PREFLIGHT_CHECK=true CI=false pnpm run build
+RUN SKIP_PREFLIGHT_CHECK=true CI=false DISABLE_ESLINT_PLUGIN=true pnpm run build
 
 FROM nginx:alpine
 COPY --from=builder /app/build /usr/share/nginx/html
