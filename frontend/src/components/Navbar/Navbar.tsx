@@ -16,6 +16,7 @@ import {
   AccountCircle as AccountCircleIcon,
   Dashboard as DashboardIcon,
   Logout as LogoutIcon,
+  Person as PersonIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -128,6 +129,10 @@ function Navbar(): JSX.Element {
             <MenuItem onClick={() => handleNavigation("/profile")}>
               <AccountCircleIcon sx={{ mr: 1 }} />
               Profile
+            </MenuItem>
+            <MenuItem onClick={() => handleNavigation("/extended-profile")}>
+              <PersonIcon sx={{ mr: 1 }} />
+              Extended Profile
             </MenuItem>
             <Divider />
             <MenuItem onClick={handleLogout}>

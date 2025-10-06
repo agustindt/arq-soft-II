@@ -6,6 +6,7 @@ import {
   User,
   UpdateProfileRequest,
   ChangePasswordRequest,
+  AvatarUploadResponse,
   ApiResponse,
   UsersResponse,
   HealthResponse,
@@ -101,10 +102,26 @@ export const authService = {
   async updateProfile(
     profileData: UpdateProfileRequest
   ): Promise<ApiResponse<User>> {
-    const response = await api.put<ApiResponse<User>>("/profile", {
-      first_name: profileData.firstName,
-      last_name: profileData.lastName,
+    const response = await api.put<ApiResponse<User>>('/profile', profileData);
+    return response.data;
+  },
+
+  // Upload Avatar
+  async uploadAvatar(file: File): Promise<AvatarUploadResponse> {
+    const formData = new FormData();
+    formData.append('avatar', file);
+    
+    const response = await api.post<AvatarUploadResponse>('/profile/avatar', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
     });
+    return response.data;
+  },
+
+  // Delete Avatar
+  async deleteAvatar(): Promise<ApiResponse<User>> {
+    const response = await api.delete<ApiResponse<User>>('/profile/avatar');
     return response.data;
   },
 

@@ -13,6 +13,7 @@ import Login from "./components/Login/Login";
 import Register from "./components/Register/Register";
 import Dashboard from "./components/Dashboard/Dashboard";
 import Profile from "./components/Profile/Profile";
+import ExtendedProfile from "./components/ExtendedProfile/ExtendedProfile";
 import Navbar from "./components/Navbar/Navbar";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
@@ -98,6 +99,14 @@ function AppContent(): JSX.Element {
             element={
               <ProtectedRoute>
                 <Profile />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/extended-profile"
+            element={
+              <ProtectedRoute>
+                <ExtendedProfile />
               </ProtectedRoute>
             }
           />

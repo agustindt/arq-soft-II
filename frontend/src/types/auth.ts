@@ -1,3 +1,13 @@
+// Social Links Type
+export interface SocialLinks {
+  instagram?: string;
+  twitter?: string;
+  facebook?: string;
+  linkedin?: string;
+  youtube?: string;
+  website?: string;
+}
+
 // Authentication Types
 export interface User {
   id: number;
@@ -5,7 +15,39 @@ export interface User {
   username: string;
   first_name: string;
   last_name: string;
+  // Extended profile fields
+  avatar_url?: string | null;
+  bio?: string | null;
+  phone?: string | null;
+  birth_date?: string | null;
+  location?: string | null;
+  gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say' | null;
+  height?: number | null; // in cm
+  weight?: number | null; // in kg
+  sports_interests?: string | null; // JSON string of sports array
+  fitness_level?: 'beginner' | 'intermediate' | 'advanced' | 'professional' | null;
+  social_links: SocialLinks;
+  // System fields
+  role: string;
+  email_verified: boolean;
+  email_verified_at?: string | null;
   is_active: boolean;
+  last_login_at?: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+// Public User Response (for listings)
+export interface PublicUser {
+  id: number;
+  username: string;
+  first_name: string;
+  last_name: string;
+  avatar_url?: string | null;
+  bio?: string | null;
+  location?: string | null;
+  social_links: SocialLinks;
+  fitness_level?: string | null;
   created_at: string;
 }
 
@@ -41,6 +83,8 @@ export interface AuthContextType extends AuthState {
   logout: () => void;
   updateProfile: (profileData: UpdateProfileRequest) => Promise<AuthResult>;
   changePassword: (passwordData: ChangePasswordRequest) => Promise<AuthResult>;
+  uploadAvatar: (file: File) => Promise<AuthResult>;
+  deleteAvatar: () => Promise<AuthResult>;
   clearError: () => void;
 }
 
@@ -50,8 +94,26 @@ export interface AuthResult {
 }
 
 export interface UpdateProfileRequest {
-  firstName: string;
-  lastName: string;
+  first_name?: string;
+  last_name?: string;
+  avatar_url?: string;
+  bio?: string;
+  phone?: string;
+  birth_date?: string; // ISO date string
+  location?: string;
+  gender?: 'male' | 'female' | 'other' | 'prefer_not_to_say';
+  height?: number; // in cm
+  weight?: number; // in kg
+  sports_interests?: string; // JSON string of sports array
+  fitness_level?: 'beginner' | 'intermediate' | 'advanced' | 'professional';
+  social_links?: SocialLinks;
+}
+
+// Avatar Upload Response
+export interface AvatarUploadResponse {
+  message: string;
+  avatar_url: string;
+  data: User;
 }
 
 export interface ChangePasswordRequest {

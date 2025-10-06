@@ -235,6 +235,38 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     }
   };
 
+  // Upload Avatar
+  const uploadAvatar = async (file: File): Promise<AuthResult> => {
+    try {
+      const response = await authService.uploadAvatar(file);
+      dispatch({
+        type: "UPDATE_PROFILE_SUCCESS",
+        payload: response.data,
+      });
+      return { success: true };
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || error.message || "Avatar upload failed";
+      return { success: false, error: errorMessage };
+    }
+  };
+
+  // Delete Avatar
+  const deleteAvatar = async (): Promise<AuthResult> => {
+    try {
+      const response = await authService.deleteAvatar();
+      dispatch({
+        type: "UPDATE_PROFILE_SUCCESS",
+        payload: response.data,
+      });
+      return { success: true };
+    } catch (error: any) {
+      const errorMessage =
+        error.response?.data?.message || error.message || "Avatar deletion failed";
+      return { success: false, error: errorMessage };
+    }
+  };
+
   // Clear Error
   const clearError = (): void => {
     dispatch({ type: "CLEAR_ERROR" });
@@ -247,6 +279,8 @@ export function AuthProvider({ children }: AuthProviderProps): JSX.Element {
     logout,
     updateProfile,
     changePassword,
+    uploadAvatar,
+    deleteAvatar,
     clearError,
   };
 

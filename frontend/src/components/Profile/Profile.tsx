@@ -42,8 +42,8 @@ function Profile(): JSX.Element {
   const [message, setMessage] = useState<Message>({ type: "", text: "" });
 
   const [profileData, setProfileData] = useState<UpdateProfileRequest>({
-    firstName: user?.first_name || "",
-    lastName: user?.last_name || "",
+    first_name: user?.first_name || "",
+    last_name: user?.last_name || "",
   });
 
   const [passwordData, setPasswordData] = useState<PasswordFormData>({
@@ -163,8 +163,8 @@ function Profile(): JSX.Element {
   // Cancelar edición
   const handleCancelEdit = (): void => {
     setProfileData({
-      firstName: user?.first_name || "",
-      lastName: user?.last_name || "",
+      first_name: user?.first_name || "",
+      last_name: user?.last_name || "",
     });
     setEditMode(false);
   };
@@ -242,8 +242,8 @@ function Profile(): JSX.Element {
                   <TextField
                     fullWidth
                     label="First Name"
-                    name="firstName"
-                    value={editMode ? profileData.firstName : user?.first_name}
+                    name="first_name"
+                    value={editMode ? profileData.first_name : user?.first_name}
                     onChange={handleProfileChange}
                     disabled={!editMode}
                     variant={editMode ? "outlined" : "filled"}
@@ -253,8 +253,8 @@ function Profile(): JSX.Element {
                   <TextField
                     fullWidth
                     label="Last Name"
-                    name="lastName"
-                    value={editMode ? profileData.lastName : user?.last_name}
+                    name="last_name"
+                    value={editMode ? profileData.last_name : user?.last_name}
                     onChange={handleProfileChange}
                     disabled={!editMode}
                     variant={editMode ? "outlined" : "filled"}

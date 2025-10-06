@@ -36,6 +36,9 @@ func main() {
 		c.Next()
 	})
 
+	// Servir archivos estáticos (avatares)
+	router.Static("/uploads", "./uploads")
+
 	// Rutas públicas
 	api := router.Group("/api/v1")
 	{
@@ -70,9 +73,11 @@ func main() {
 			// Perfil del usuario autenticado
 			profile := protected.Group("/profile")
 			{
-				profile.GET("", handlers.GetProfile)          // GET /api/v1/profile
-				profile.PUT("", handlers.UpdateProfile)       // PUT /api/v1/profile
-				profile.PUT("/password", handlers.ChangePassword) // PUT /api/v1/profile/password
+				profile.GET("", handlers.GetProfile)                  // GET /api/v1/profile
+				profile.PUT("", handlers.UpdateProfile)               // PUT /api/v1/profile
+				profile.PUT("/password", handlers.ChangePassword)     // PUT /api/v1/profile/password
+				profile.POST("/avatar", handlers.UploadAvatar)        // POST /api/v1/profile/avatar
+				profile.DELETE("/avatar", handlers.DeleteAvatar)      // DELETE /api/v1/profile/avatar
 			}
 		}
 	}
@@ -81,17 +86,36 @@ func main() {
 	router.GET("/", func(c *gin.Context) {
 		c.JSON(200, gin.H{
 			"message": "Users API - Sports Activities Platform",
-			"version": "1.0.0",
+			"version": "2.0.0",
+			"features": []string{
+				"JWT Authentication",
+				"Extended User Profiles",
+				"Avatar Upload/Management",
+				"Role-based Access (Coming Soon)",
+				"Email Verification (Coming Soon)",
+			},
 			"endpoints": gin.H{
+				// Public endpoints
 				"health":         "GET /api/v1/health",
 				"auth_register":  "POST /api/v1/auth/register",
 				"auth_login":     "POST /api/v1/auth/login",
 				"auth_refresh":   "POST /api/v1/auth/refresh",
 				"users_list":     "GET /api/v1/users",
 				"user_by_id":     "GET /api/v1/users/:id",
-				"profile":        "GET /api/v1/profile (protected)",
-				"update_profile": "PUT /api/v1/profile (protected)",
-				"change_password": "PUT /api/v1/profile/password (protected)",
+				
+				// Protected profile endpoints
+				"profile":            "GET /api/v1/profile (protected)",
+				"update_profile":     "PUT /api/v1/profile (protected)",
+				"change_password":    "PUT /api/v1/profile/password (protected)",
+				"upload_avatar":      "POST /api/v1/profile/avatar (protected)",
+				"delete_avatar":      "DELETE /api/v1/profile/avatar (protected)",
+				
+				// Static files
+				"avatars":            "GET /uploads/avatars/:filename",
+			},
+			"profile_fields": []string{
+				"avatar_url", "bio", "phone", "birth_date", "location", "gender",
+				"height", "weight", "sports_interests", "fitness_level", "social_links",
 			},
 		})
 	})
@@ -102,13 +126,18 @@ func main() {
 		port = "8081"
 	}
 
-	log.Printf("🚀 Users API starting on port %s", port)
+	log.Printf("🚀 Users API v2.0.0 starting on port %s", port)
 	log.Printf("📊 Database connected and migrated successfully")
 	log.Printf("🔐 JWT authentication enabled")
+	log.Printf("👤 Extended user profiles with avatar support")
+	log.Printf("📸 Avatar upload/management enabled")
 	log.Printf("📋 Available endpoints:")
-	log.Printf("   • Health: http://localhost:%s/api/v1/health", port)
+	log.Printf("   • API Documentation: http://localhost:%s/", port)
+	log.Printf("   • Health Check: http://localhost:%s/api/v1/health", port)
 	log.Printf("   • Register: POST http://localhost:%s/api/v1/auth/register", port)
 	log.Printf("   • Login: POST http://localhost:%s/api/v1/auth/login", port)
+	log.Printf("   • Profile: GET/PUT http://localhost:%s/api/v1/profile", port)
+	log.Printf("   • Avatar Upload: POST http://localhost:%s/api/v1/profile/avatar", port)
 
 	if err := router.Run(":" + port); err != nil {
 		log.Fatal("Failed to start server:", err)
