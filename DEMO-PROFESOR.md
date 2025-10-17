@@ -12,6 +12,7 @@
 ## 🚀 Cómo Ejecutar el Proyecto
 
 ### Prerrequisitos
+
 - Docker y Docker Compose instalados
 - Puertos disponibles: 8081 (Users API), 3306 (MySQL), 3000 (Frontend)
 
@@ -40,14 +41,55 @@ docker-compose down
 
 ---
 
+## 🌐 Acceso a la Aplicación
+
+### Frontend (React)
+```
+URL: http://localhost:3000
+```
+
+El frontend está construido con React y ofrece una interfaz completa para:
+- ✅ Registro de usuarios
+- ✅ Login/Logout
+- ✅ Ver y editar perfil
+- ✅ Subir avatar
+- ✅ Ver lista de actividades
+- ✅ Panel de administración (para admins)
+
+**Para probar el frontend:**
+1. Abre tu navegador en `http://localhost:3000`
+2. Regístrate como nuevo usuario
+3. Inicia sesión
+4. Explora las diferentes funcionalidades
+
+### Backend API (Users API)
+```
+URL: http://localhost:8081
+Documentación: http://localhost:8081/
+Health Check: http://localhost:8081/api/v1/health
+```
+
+### Otros Servicios
+```
+Activities API:  http://localhost:8082
+Search API:      http://localhost:8083
+RabbitMQ UI:     http://localhost:15672 (guest/guest)
+MySQL:           localhost:3307
+MongoDB:         localhost:27017
+```
+
+---
+
 ## 🎯 Endpoints Implementados
 
 ### 1. **Health Check** ✅
+
 ```bash
 curl http://localhost:8081/api/v1/health
 ```
 
 **Respuesta Esperada:**
+
 ```json
 {
   "status": "ok",
@@ -59,6 +101,7 @@ curl http://localhost:8081/api/v1/health
 ---
 
 ### 2. **Documentación de la API** 📚
+
 ```bash
 curl http://localhost:8081/
 ```
@@ -68,6 +111,7 @@ Muestra todos los endpoints disponibles, características y versión.
 ---
 
 ### 3. **Registro de Usuario** 🆕
+
 ```bash
 curl -X POST http://localhost:8081/api/v1/auth/register \
   -H "Content-Type: application/json" \
@@ -81,6 +125,7 @@ curl -X POST http://localhost:8081/api/v1/auth/register \
 ```
 
 **Características:**
+
 - ✅ Validación de datos de entrada
 - ✅ Hash seguro de contraseña con bcrypt
 - ✅ Retorna JWT token automáticamente
@@ -89,6 +134,7 @@ curl -X POST http://localhost:8081/api/v1/auth/register \
 ---
 
 ### 4. **Login** 🔐
+
 ```bash
 curl -X POST http://localhost:8081/api/v1/auth/login \
   -H "Content-Type: application/json" \
@@ -99,6 +145,7 @@ curl -X POST http://localhost:8081/api/v1/auth/login \
 ```
 
 **Características:**
+
 - ✅ Validación de credenciales
 - ✅ Retorna JWT token con claims (user_id, email, username)
 - ✅ Token válido por 24 horas
@@ -106,6 +153,7 @@ curl -X POST http://localhost:8081/api/v1/auth/login \
 ---
 
 ### 5. **Ver Perfil** (Protegido con JWT) 👤
+
 ```bash
 # Primero hacer login para obtener el token
 TOKEN=$(curl -s -X POST http://localhost:8081/api/v1/auth/login \
@@ -119,6 +167,7 @@ curl -X GET http://localhost:8081/api/v1/profile \
 ```
 
 **Características:**
+
 - ✅ Requiere JWT token válido
 - ✅ Retorna información completa del perfil
 - ✅ Incluye campos extendidos (bio, avatar, ubicación, etc.)
@@ -126,6 +175,7 @@ curl -X GET http://localhost:8081/api/v1/profile \
 ---
 
 ### 6. **Actualizar Perfil** ✏️
+
 ```bash
 curl -X PUT http://localhost:8081/api/v1/profile \
   -H "Authorization: Bearer $TOKEN" \
@@ -142,6 +192,7 @@ curl -X PUT http://localhost:8081/api/v1/profile \
 ---
 
 ### 7. **Listar Usuarios Públicos** 👥
+
 ```bash
 curl http://localhost:8081/api/v1/users
 ```
@@ -151,6 +202,7 @@ Retorna lista de usuarios con información pública (sin datos sensibles).
 ---
 
 ### 8. **Obtener Usuario por ID** 🔍
+
 ```bash
 curl http://localhost:8081/api/v1/users/1
 ```
@@ -158,6 +210,7 @@ curl http://localhost:8081/api/v1/users/1
 ---
 
 ### 9. **Cambiar Contraseña** 🔑
+
 ```bash
 curl -X PUT http://localhost:8081/api/v1/profile/password \
   -H "Authorization: Bearer $TOKEN" \
@@ -171,6 +224,7 @@ curl -X PUT http://localhost:8081/api/v1/profile/password \
 ---
 
 ### 10. **Crear Usuario Root** (Admin) 👑
+
 ```bash
 curl -X POST http://localhost:8081/api/v1/admin/create-root \
   -H "Content-Type: application/json" \
@@ -189,18 +243,21 @@ curl -X POST http://localhost:8081/api/v1/admin/create-root \
 ### 11. **Endpoints de Administración** (Requieren rol admin/root)
 
 #### Ver Estadísticas del Sistema
+
 ```bash
 curl -X GET http://localhost:8081/api/v1/admin/stats \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 #### Listar Todos los Usuarios (con datos completos)
+
 ```bash
 curl -X GET http://localhost:8081/api/v1/admin/users \
   -H "Authorization: Bearer $ADMIN_TOKEN"
 ```
 
 #### Actualizar Rol de Usuario
+
 ```bash
 curl -X PUT http://localhost:8081/api/v1/admin/users/2/role \
   -H "Authorization: Bearer $ADMIN_TOKEN" \
@@ -260,7 +317,7 @@ CREATE TABLE users (
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    
+
     -- Perfil extendido
     avatar_url VARCHAR(500),
     bio TEXT,
@@ -273,19 +330,19 @@ CREATE TABLE users (
     sports_interests JSON,
     fitness_level ENUM('beginner', 'intermediate', 'advanced'),
     social_links JSON,
-    
+
     -- Control de acceso
     role ENUM('user', 'moderator', 'admin', 'root') DEFAULT 'user',
     email_verified BOOLEAN DEFAULT FALSE,
     email_verified_at TIMESTAMP NULL,
     is_active BOOLEAN DEFAULT TRUE,
-    
+
     -- Timestamps
     last_login_at TIMESTAMP NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     deleted_at TIMESTAMP NULL,
-    
+
     -- Índices
     INDEX idx_users_email (email),
     INDEX idx_users_username (username),
@@ -312,6 +369,7 @@ docker-compose logs -f
 ## ✅ Lista de Verificación para el Profesor
 
 ### Funcionalidades Básicas
+
 - [ ] La API levanta correctamente con `docker-compose up`
 - [ ] El health check responde en `/api/v1/health`
 - [ ] Se puede registrar un nuevo usuario
@@ -319,24 +377,28 @@ docker-compose logs -f
 - [ ] El token JWT permite acceder a endpoints protegidos
 
 ### Autenticación y Seguridad
+
 - [ ] Las contraseñas se guardan hasheadas (bcrypt)
 - [ ] Los tokens JWT contienen claims correctos
 - [ ] Los endpoints protegidos rechazan requests sin token
 - [ ] Los endpoints de admin rechazan usuarios sin rol admin
 
 ### Base de Datos
+
 - [ ] La conexión a MySQL funciona correctamente
 - [ ] Las migraciones se aplican automáticamente
 - [ ] Los usuarios se guardan con todos los campos
 - [ ] Los índices están creados
 
 ### Arquitectura
+
 - [ ] El código sigue arquitectura en capas (handlers, models, middleware)
 - [ ] Separación de responsabilidades clara
 - [ ] Uso correcto de GORM para ORM
 - [ ] Middleware de autenticación bien implementado
 
 ### Documentación
+
 - [ ] El endpoint raíz (`/`) muestra documentación completa
 - [ ] Logs informativos y claros
 - [ ] Código comentado donde es necesario
@@ -346,6 +408,7 @@ docker-compose logs -f
 ## 🐛 Troubleshooting
 
 ### La API no levanta
+
 ```bash
 # Verificar que los puertos no estén en uso
 lsof -i :8081
@@ -356,6 +419,7 @@ docker-compose up --build
 ```
 
 ### Error de conexión a MySQL
+
 ```bash
 # Verificar que MySQL esté healthy
 docker-compose ps
@@ -365,6 +429,7 @@ docker logs arq-soft-ii-mysql-1
 ```
 
 ### Token JWT inválido
+
 - Verificar que JWT_SECRET esté configurado en docker-compose.yml
 - El token expira después de 24 horas
 
@@ -378,31 +443,82 @@ Para cualquier consulta sobre la implementación, referirse al código fuente en
 
 ## 🎯 Resumen de Endpoints
 
-| Método | Endpoint | Autenticación | Descripción |
-|--------|----------|---------------|-------------|
-| GET | `/api/v1/health` | No | Health check |
-| GET | `/` | No | Documentación API |
-| POST | `/api/v1/auth/register` | No | Registrar usuario |
-| POST | `/api/v1/auth/login` | No | Iniciar sesión |
-| POST | `/api/v1/auth/refresh` | No | Renovar token |
-| GET | `/api/v1/users` | No | Listar usuarios (público) |
-| GET | `/api/v1/users/:id` | No | Ver usuario por ID |
-| GET | `/api/v1/profile` | JWT | Ver mi perfil |
-| PUT | `/api/v1/profile` | JWT | Actualizar perfil |
-| PUT | `/api/v1/profile/password` | JWT | Cambiar contraseña |
-| POST | `/api/v1/profile/avatar` | JWT | Subir avatar |
-| DELETE | `/api/v1/profile/avatar` | JWT | Eliminar avatar |
-| POST | `/api/v1/admin/create-root` | Secret Key | Crear usuario root |
-| GET | `/api/v1/admin/users` | Admin | Ver todos los usuarios |
-| POST | `/api/v1/admin/users` | Admin | Crear usuario |
-| PUT | `/api/v1/admin/users/:id/role` | Admin | Cambiar rol |
-| PUT | `/api/v1/admin/users/:id/status` | Admin | Cambiar estado |
-| GET | `/api/v1/admin/stats` | Admin | Estadísticas |
-| DELETE | `/api/v1/admin/users/:id` | Root | Eliminar usuario |
+| Método | Endpoint                         | Autenticación | Descripción               |
+| ------ | -------------------------------- | ------------- | ------------------------- |
+| GET    | `/api/v1/health`                 | No            | Health check              |
+| GET    | `/`                              | No            | Documentación API         |
+| POST   | `/api/v1/auth/register`          | No            | Registrar usuario         |
+| POST   | `/api/v1/auth/login`             | No            | Iniciar sesión            |
+| POST   | `/api/v1/auth/refresh`           | No            | Renovar token             |
+| GET    | `/api/v1/users`                  | No            | Listar usuarios (público) |
+| GET    | `/api/v1/users/:id`              | No            | Ver usuario por ID        |
+| GET    | `/api/v1/profile`                | JWT           | Ver mi perfil             |
+| PUT    | `/api/v1/profile`                | JWT           | Actualizar perfil         |
+| PUT    | `/api/v1/profile/password`       | JWT           | Cambiar contraseña        |
+| POST   | `/api/v1/profile/avatar`         | JWT           | Subir avatar              |
+| DELETE | `/api/v1/profile/avatar`         | JWT           | Eliminar avatar           |
+| POST   | `/api/v1/admin/create-root`      | Secret Key    | Crear usuario root        |
+| GET    | `/api/v1/admin/users`            | Admin         | Ver todos los usuarios    |
+| POST   | `/api/v1/admin/users`            | Admin         | Crear usuario             |
+| PUT    | `/api/v1/admin/users/:id/role`   | Admin         | Cambiar rol               |
+| PUT    | `/api/v1/admin/users/:id/status` | Admin         | Cambiar estado            |
+| GET    | `/api/v1/admin/stats`            | Admin         | Estadísticas              |
+| DELETE | `/api/v1/admin/users/:id`        | Root          | Eliminar usuario          |
 
 ---
 
 **Total de Endpoints Implementados: 18+**
 
-✅ **La API está 100% funcional y lista para evaluación**
+---
 
+## 🎨 Interfaz Web (Frontend)
+
+El proyecto incluye una interfaz web completa construida con React que se conecta a la Users API:
+
+### Acceso
+```
+URL: http://localhost:3000
+```
+
+### Funcionalidades del Frontend
+- 🏠 **Home Page**: Página principal con información del proyecto
+- 🔐 **Autenticación**: Sistema completo de registro y login
+- 👤 **Perfil de Usuario**: 
+  - Ver información personal
+  - Editar perfil extendido
+  - Cambiar contraseña
+  - Subir y gestionar avatar
+- 📋 **Lista de Actividades**: Ver todas las actividades deportivas disponibles
+- 👥 **Usuarios**: Ver perfiles públicos de otros usuarios
+- 👨‍💼 **Panel de Admin**: (Solo para administradores)
+  - Gestión de usuarios
+  - Estadísticas del sistema
+  - Control de roles
+
+### Integración con Users API
+El frontend consume todos los endpoints de la Users API:
+- Usa JWT tokens para autenticación
+- Guarda el token en localStorage
+- Renueva automáticamente el token cuando expira
+- Maneja estados de carga y errores
+- Interfaz responsive (mobile-first)
+
+---
+
+## ✅ **Sistema Completo Funcional y Listo para Evaluación**
+
+### Servicios Corriendo:
+- ✅ **Frontend (React)** → http://localhost:3000
+- ✅ **Users API** → http://localhost:8081
+- ✅ **Activities API** → http://localhost:8082
+- ✅ **MySQL** → localhost:3307
+- ✅ **MongoDB** → localhost:27017
+- ✅ **RabbitMQ** → localhost:5672, UI: localhost:15672
+- ✅ **Memcached** → localhost:11211
+
+### Para Demostrar al Profesor:
+1. **Abre el navegador en** http://localhost:3000
+2. **Registra un usuario** desde la interfaz web
+3. **Inicia sesión** y explora el perfil
+4. **Muestra la API** en http://localhost:8081/
+5. **Prueba endpoints** con curl (ejemplos arriba)
