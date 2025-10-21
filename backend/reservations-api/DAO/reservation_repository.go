@@ -12,6 +12,41 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
+// --- INTERFAZ ---
+// Esto es lo que el service espera usar.
+type ReservationRepository interface {
+	Insert(ctx context.Context, r *models.Reservation) (string, error)
+	GetByID(ctx context.Context, id string) (*models.Reservation, error)
+	UpdateByID(ctx context.Context, id string, r *models.Reservation) error
+	DeleteByID(ctx context.Context, id string) error
+}
+
+// --- IMPLEMENTACIÓN MONGO ---
+
+type mongoReservationRepo struct {
+	col *mongo.Collection
+}
+
+// Constructor
+func NewMongoReservationRepo(db *mongo.Database) ReservationRepository {
+	return &mongoReservationRepo{
+		col: db.Collection("reservations"),
+	}
+}
+
+// Insert crea una nueva reserva
+func (m *mongoReservationRepo) Insert(ctx context.Context, r *models.Reservation) (string, error) {
+	r.ID = primitive.NewObjectID()
+	r.CreatedAt = time.Now().UTC()
+	r.UpdatedAt = r.CreatedAt
+	_, err := m.col.InsertOne(ctx, r)
+	if err != nil {
+		return "", err
+	}
+	return r.ID.Hex(), nil
+}
+
+// GetByID obtiene una reserva por ID
 func (m *mongoReservationRepo) GetByID(ctx context.Context, id string) (*models.Reservation, error) {
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -27,6 +62,7 @@ func (m *mongoReservationRepo) GetByID(ctx context.Context, id string) (*models.
 	return &r, nil
 }
 
+// UpdateByID actualiza una reserva
 func (m *mongoReservationRepo) UpdateByID(ctx context.Context, id string, r *models.Reservation) error {
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
@@ -37,6 +73,7 @@ func (m *mongoReservationRepo) UpdateByID(ctx context.Context, id string, r *mod
 	return err
 }
 
+// DeleteByID elimina una reserva
 func (m *mongoReservationRepo) DeleteByID(ctx context.Context, id string) error {
 	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {

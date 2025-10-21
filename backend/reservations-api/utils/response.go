@@ -5,6 +5,8 @@ import (
 	"net/http"
 )
 
+// TODO revisar esto
+
 func WriteJSON(w http.ResponseWriter, code int, v interface{}) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(code)

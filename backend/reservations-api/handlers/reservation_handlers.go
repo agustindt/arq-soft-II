@@ -7,11 +7,10 @@ import (
 	"github.com/gorilla/mux"
 	"go.mongodb.org/mongo-driver/mongo"
 
+	errorspkg "reservations/errors"
 	"reservations/models"
 	"reservations/services"
 	"reservations/utils"
-
-	"encoding/json"
 )
 
 // ReservationHandler holds service reference
@@ -54,7 +53,7 @@ func (h *ReservationHandler) get(w http.ResponseWriter, req *http.Request) {
 	id := mux.Vars(req)["id"]
 	r, err := h.svc.Get(ctx, id)
 	if err != nil {
-		if err == mongo.ErrNoDocuments || err == services.ErrNotFound {
+		if err == mongo.ErrNoDocuments || err == errorspkg.ErrNotFound {
 			utils.WriteError(w, http.StatusNotFound, "not found")
 			return
 		}

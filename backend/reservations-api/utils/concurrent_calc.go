@@ -7,6 +7,7 @@ import (
 	"time"
 )
 
+// TODO ver que funcione
 // ComputeScore performs a concurrent calculation, uses goroutines, channels and waitgroup
 func ComputeScore(ctx context.Context, tasks int) (float64, error) {
 	if tasks <= 0 {

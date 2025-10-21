@@ -4,10 +4,10 @@ import (
 	"context"
 	"time"
 
+	repository "reservations/DAO"
 	errorspkg "reservations/errors"
 	"reservations/messaging"
 	"reservations/models"
-	"reservations/repository"
 	"reservations/utils"
 )
 

@@ -9,15 +9,15 @@ import (
 
 	"github.com/gorilla/mux"
 
+	repository "reservations/DAO"
 	"reservations/config"
 	"reservations/handlers"
 	"reservations/messaging"
-	"reservations/repository"
 	"reservations/services"
 )
 
 func main() {
-	// context for startup
+	// start
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
 
@@ -29,7 +29,7 @@ func main() {
 	db := client.Database(config.DatabaseName)
 	col := db.Collection("reservations")
 
-	// rabbit
+	// TODO rabbit
 	rabbitURL := getenvDefault("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/")
 	exchange := getenvDefault("RABBITMQ_EXCHANGE", "reservations")
 	pub, err := messaging.NewRabbitPublisher(rabbitURL, exchange)
@@ -41,11 +41,11 @@ func main() {
 	// repo
 	repo := repository.NewMongoReservationRepo(col)
 
-	// users service
+	// TODO users service
 	usersBase := getenvDefault("USERS_SERVICE_URL", "http://localhost:8081")
 	users := services.NewHTTPUserService(usersBase)
 
-	// business service (tasks from env)
+	// concurrencia y inicio de servicio
 	tasks := 5
 	svc := services.NewReservationService(repo, pub, users, tasks)
 

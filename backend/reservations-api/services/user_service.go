@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// UserService validates owners via external HTTP API
+// UserService validates users external API
 type UserService interface {
 	Exists(ctx context.Context, userID string) (bool, error)
 }
