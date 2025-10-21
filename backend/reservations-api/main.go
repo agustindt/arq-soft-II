@@ -4,69 +4,72 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"os"
+	"reservations/config"
+	"reservations/controllers"
+	"reservations/middleware"
+	"reservations/repository"
+	"reservations/services"
 	"time"
 
-	"github.com/gorilla/mux"
-
-	repository "reservations/DAO"
-	"reservations/config"
-	"reservations/handlers"
-	"reservations/messaging"
-	"reservations/services"
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	// start
-	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
-	defer cancel()
+	// configuracion inicial
+	cfg := config.Load()
 
-	// connect mongo
-	client, err := config.ConnectMongo(ctx)
-	if err != nil {
-		log.Fatalf("mongo connect failed: %v", err)
+	// Context
+	ctx := context.Background()
+
+	// Capa de datos: maneja operaciones DB
+	ReservasMongoRepo := repository.NewMongoReservasRepository(ctx, cfg.Mongo.URI, cfg.Mongo.DB, "Reservas")
+
+	// services
+	ReservaService := services.NewReservasService(ReservasMongoRepo)
+
+	// controllers
+	ReservaController := controllers.NewReservasController(&ReservaService)
+
+	// Configurar router HTTP con Gin
+	router := gin.Default()
+
+	// Middleware
+	router.Use(middleware.CORSMiddleware)
+
+	// Health check endpoint
+	router.GET("/healthz", func(c *gin.Context) {
+		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+	})
+
+	// Router
+	// GET /Reservas - listar todos los Reservas
+	router.GET("/reservas", ReservaController.GetReservas)
+
+	// POST /Reservas - crear nuevo Reserva
+	router.POST("/reservas", ReservaController.CreateReserva)
+
+	// GET /Reservas/:id - obtener Reserva por ID
+	router.GET("/reservas/:id", ReservaController.GetReservaByID)
+
+	// PUT /Reservas/:id - actualizar Reserva existente
+	router.PUT("/reservas/:id", ReservaController.UpdateReserva)
+
+	// DELETE /Reservas/:id - eliminar Reserva
+	router.DELETE("/reservas/:id", ReservaController.DeleteReserva)
+
+	// Configuración del server
+	srv := &http.Server{
+		Addr:              ":" + cfg.Port,
+		Handler:           router,
+		ReadHeaderTimeout: 10 * time.Second,
 	}
-	db := client.Database(config.DatabaseName)
-	col := db.Collection("reservations")
 
-	// TODO rabbit
-	rabbitURL := getenvDefault("RABBITMQ_URL", "amqp://guest:guest@localhost:5672/")
-	exchange := getenvDefault("RABBITMQ_EXCHANGE", "reservations")
-	pub, err := messaging.NewRabbitPublisher(rabbitURL, exchange)
-	if err != nil {
-		log.Fatalf("rabbitmq init failed: %v", err)
-	}
-	defer pub.Close()
+	log.Printf(" API listening on port %s", cfg.Port)
+	log.Printf(" Health check: http://localhost:%s/healthz", cfg.Port)
+	log.Printf(" Reservas API: http://localhost:%s/Reservas", cfg.Port)
 
-	// repo
-	repo := repository.NewMongoReservationRepo(col)
-
-	// TODO users service
-	usersBase := getenvDefault("USERS_SERVICE_URL", "http://localhost:8081")
-	users := services.NewHTTPUserService(usersBase)
-
-	// concurrencia y inicio de servicio
-	tasks := 5
-	svc := services.NewReservationService(repo, pub, users, tasks)
-
-	// handlers
-	rh := handlers.NewReservationHandler(svc)
-
-	r := mux.NewRouter()
-	rh.Register(r)
-
-	addr := getenvDefault("HTTP_ADDR", ":8080")
-	srv := &http.Server{Addr: addr, Handler: r}
-
-	log.Printf("listening %s", addr)
+	// Iniciar servidor
 	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("server error: %v", err)
 	}
-}
-
-func getenvDefault(k, d string) string {
-	if v := os.Getenv(k); v != "" {
-		return v
-	}
-	return d
 }
