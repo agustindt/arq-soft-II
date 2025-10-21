@@ -48,7 +48,7 @@ func (r *Rabbit) DeclareSetup(exchange, queue, routingKey string) error {
 	if err != nil {
 		return err
 	}
-	// Close cierra la conexión
+	// Vincula la cola al exchange con la routing key
 	return r.Channel.QueueBind(
 		q.Name, routingKey, exchange, false, nil,
 	)
@@ -76,4 +76,25 @@ func (r *Rabbit) Close() {
 	if err := r.Conn.Close(); err != nil {
 		log.Println("Error cerrando conexión:", err)
 	}
+}
+
+// Consume escucha los mensajes de una cola específica y los devuelve como un canal (<-chan amqp.Delivery)
+func (r *Rabbit) Consume(queue string) (<-chan amqp.Delivery, error) {
+	msgs, err := r.Channel.Consume(
+		queue, // nombre de la cola
+		"",    // consumer tag
+		false, // autoAck: false → hacemos Ack manual
+		false, // exclusive
+		false, // noLocal
+		false, // noWait
+		nil,   // args
+
+	)
+	if err != nil {
+		return nil, err
+	}
+	log.Println("📡 Escuchando mensajes de RabbitMQ en cola:", queue)
+
+	return msgs, nil
+
 }

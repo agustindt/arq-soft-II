@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<schema name="activities" version="1.6">
+  <!-- Campos -->
+  <fields>
+    <field name="id" type="string" indexed="true" stored="true" required="true" />
+    <field name="name" type="text_general" indexed="true" stored="true" />
+    <field name="description" type="text_general" indexed="true" stored="true" />
+    <field name="category" type="string" indexed="true" stored="true" />
+    <field name="difficulty" type="string" indexed="true" stored="true" />
+    <field name="location" type="text_general" indexed="true" stored="true" />
+    <field name="price" type="float" indexed="true" stored="true" />
+    <field name="date_created" type="date" indexed="true" stored="true" />
+    <field name="text" type="text_general" indexed="true" stored="false" multiValued="true"/>
+  </fields>
+
+  <!-- Clave única -->
+  <uniqueKey>id</uniqueKey>
+
+  <!-- Copiar los campos principales al campo de texto general -->
+  <copyField source="name" dest="text"/>
+  <copyField source="description" dest="text"/>
+  <copyField source="location" dest="text"/>
+
+  <!-- Tipos de datos -->
+  <types>
+    <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+    <fieldType name="float" class="solr.FloatPointField"/>
+    <fieldType name="date" class="solr.DatePointField"/>
+    <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100">
+      <analyzer type="index">
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
+        <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" expand="true" ignoreCase="true"/>
+      </analyzer>
+      <analyzer type="query">
+        <tokenizer class="solr.StandardTokenizerFactory"/>
+        <filter class="solr.LowerCaseFilterFactory"/>
+        <filter class="solr.StopFilterFactory" ignoreCase="true" words="stopwords.txt"/>
+        <filter class="solr.SynonymGraphFilterFactory" synonyms="synonyms.txt" expand="true" ignoreCase="true"/>
+      </analyzer>
+    </fieldType>
+  </types>
+</schema>
