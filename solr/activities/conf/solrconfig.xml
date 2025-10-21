@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<config>
+  <!-- Versión de Lucene -->
+  <luceneMatchVersion>9.4.0</luceneMatchVersion>
+
+  <!-- Directorio de datos -->
+  <dataDir>${solr.data.dir:}</dataDir>
+
+  <!-- Configuración básica -->
+  <directoryFactory name="DirectoryFactory" class="solr.StandardDirectoryFactory"/>
+
+  <!-- Manejador de actualizaciones -->
+  <updateHandler class="solr.DirectUpdateHandler2">
+    <autoCommit>
+      <maxTime>15000</maxTime>
+    </autoCommit>
+    <autoSoftCommit>
+      <maxTime>2000</maxTime>
+    </autoSoftCommit>
+  </updateHandler>
+
+  <!-- Cachés -->
+  <query>
+    <filterCache class="solr.FastLRUCache" size="512" initialSize="512"/>
+    <queryResultCache class="solr.LRUCache" size="512" initialSize="512"/>
+    <documentCache class="solr.LRUCache" size="512" initialSize="512"/>
+  </query>
+
+  <!-- Dispatcher de requests -->
+  <requestDispatcher handleSelect="true">
+    <requestParsers enableRemoteStreaming="true" multipartUploadLimitInKB="2048000"/>
+  </requestDispatcher>
+
+  <!-- 🚀 Handler principal de búsqueda -->
+  <requestHandler name="/select" class="solr.SearchHandler">
+    <lst name="defaults">
+      <str name="echoParams">explicit</str>
+      <int name="rows">10</int>
+      <str name="df">text</str>
+    </lst>
+  </requestHandler>
+
+  <!-- Otros handlers comunes -->
+  <requestHandler name="/update" class="solr.UpdateRequestHandler"/>
+  <requestHandler name="/admin/ping" class="solr.PingRequestHandler"/>
+
+  <!-- Configuración de administración -->
+  <admin>
+    <defaultQuery>*:*</defaultQuery>
+  </admin>
+</config>
