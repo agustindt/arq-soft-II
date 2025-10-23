@@ -44,11 +44,13 @@ docker-compose down
 ## 🌐 Acceso a la Aplicación
 
 ### Frontend (React)
+
 ```
 URL: http://localhost:3000
 ```
 
 El frontend está construido con React y ofrece una interfaz completa para:
+
 - ✅ Registro de usuarios
 - ✅ Login/Logout
 - ✅ Ver y editar perfil
@@ -57,12 +59,14 @@ El frontend está construido con React y ofrece una interfaz completa para:
 - ✅ Panel de administración (para admins)
 
 **Para probar el frontend:**
+
 1. Abre tu navegador en `http://localhost:3000`
 2. Regístrate como nuevo usuario
 3. Inicia sesión
 4. Explora las diferentes funcionalidades
 
 ### Backend API (Users API)
+
 ```
 URL: http://localhost:8081
 Documentación: http://localhost:8081/
@@ -70,6 +74,7 @@ Health Check: http://localhost:8081/api/v1/health
 ```
 
 ### Otros Servicios
+
 ```
 Activities API:  http://localhost:8082
 Search API:      http://localhost:8083
@@ -476,14 +481,16 @@ Para cualquier consulta sobre la implementación, referirse al código fuente en
 El proyecto incluye una interfaz web completa construida con React que se conecta a la Users API:
 
 ### Acceso
+
 ```
 URL: http://localhost:3000
 ```
 
 ### Funcionalidades del Frontend
+
 - 🏠 **Home Page**: Página principal con información del proyecto
 - 🔐 **Autenticación**: Sistema completo de registro y login
-- 👤 **Perfil de Usuario**: 
+- 👤 **Perfil de Usuario**:
   - Ver información personal
   - Editar perfil extendido
   - Cambiar contraseña
@@ -496,7 +503,9 @@ URL: http://localhost:3000
   - Control de roles
 
 ### Integración con Users API
+
 El frontend consume todos los endpoints de la Users API:
+
 - Usa JWT tokens para autenticación
 - Guarda el token en localStorage
 - Renueva automáticamente el token cuando expira
@@ -508,6 +517,7 @@ El frontend consume todos los endpoints de la Users API:
 ## ✅ **Sistema Completo Funcional y Listo para Evaluación**
 
 ### Servicios Corriendo:
+
 - ✅ **Frontend (React)** → http://localhost:3000
 - ✅ **Users API** → http://localhost:8081
 - ✅ **Activities API** → http://localhost:8082
@@ -517,6 +527,7 @@ El frontend consume todos los endpoints de la Users API:
 - ✅ **Memcached** → localhost:11211
 
 ### Para Demostrar al Profesor:
+
 1. **Abre el navegador en** http://localhost:3000
 2. **Registra un usuario** desde la interfaz web
 3. **Inicia sesión** y explora el perfil

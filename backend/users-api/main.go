@@ -5,8 +5,10 @@ import (
 	"os"
 
 	"users-api/config"
-	"users-api/handlers"
+	"users-api/controllers"
 	"users-api/middleware"
+	"users-api/repositories"
+	"users-api/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -22,17 +24,27 @@ func main() {
 
 	router := gin.Default()
 
+	// Inicializar dependencias
+	userRepo := repositories.NewUserRepository(config.GetDB())
+	authService := services.NewAuthService(userRepo)
+	userService := services.NewUserService(userRepo)
+	adminService := services.NewAdminService(userRepo)
+
+	authController := controllers.NewAuthController(authService)
+	userController := controllers.NewUserController(userService)
+	adminController := controllers.NewAdminController(adminService)
+
 	// Middleware CORS básico
 	router.Use(func(c *gin.Context) {
 		c.Header("Access-Control-Allow-Origin", "*")
 		c.Header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
 		c.Header("Access-Control-Allow-Headers", "Origin, Content-Type, Authorization")
-		
+
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(204)
 			return
 		}
-		
+
 		c.Next()
 	})
 
@@ -54,19 +66,19 @@ func main() {
 		// Rutas de autenticación (públicas)
 		auth := api.Group("/auth")
 		{
-			auth.POST("/register", handlers.Register)
-			auth.POST("/login", handlers.Login)
-			auth.POST("/refresh", handlers.RefreshToken)
+			auth.POST("/register", authController.Register)
+			auth.POST("/login", authController.Login)
+			auth.POST("/refresh", authController.RefreshToken)
 		}
 
 		// Ruta especial para crear usuario root (solo disponible si no existe root)
-		api.POST("/admin/create-root", handlers.CreateRoot)
+		api.POST("/admin/create-root", adminController.CreateRoot)
 
 		// Rutas públicas de usuarios
 		users := api.Group("/users")
 		{
-			users.GET("", handlers.ListUsers)           // GET /api/v1/users
-			users.GET("/:id", handlers.GetUserByID)     // GET /api/v1/users/:id
+			users.GET("", userController.ListUsers)       // GET /api/v1/users
+			users.GET("/:id", userController.GetUserByID) // GET /api/v1/users/:id
 		}
 
 		// Rutas protegidas (requieren JWT)
@@ -76,11 +88,11 @@ func main() {
 			// Perfil del usuario autenticado
 			profile := protected.Group("/profile")
 			{
-				profile.GET("", handlers.GetProfile)                  // GET /api/v1/profile
-				profile.PUT("", handlers.UpdateProfile)               // PUT /api/v1/profile
-				profile.PUT("/password", handlers.ChangePassword)     // PUT /api/v1/profile/password
-				profile.POST("/avatar", handlers.UploadAvatar)        // POST /api/v1/profile/avatar
-				profile.DELETE("/avatar", handlers.DeleteAvatar)      // DELETE /api/v1/profile/avatar
+				profile.GET("", userController.GetProfile)              // GET /api/v1/profile
+				profile.PUT("", userController.UpdateProfile)           // PUT /api/v1/profile
+				profile.PUT("/password", userController.ChangePassword) // PUT /api/v1/profile/password
+				profile.POST("/avatar", userController.UploadAvatar)    // POST /api/v1/profile/avatar
+				profile.DELETE("/avatar", userController.DeleteAvatar)  // DELETE /api/v1/profile/avatar
 			}
 		}
 
@@ -90,11 +102,11 @@ func main() {
 		admin.Use(middleware.RequireRole("admin"))
 		{
 			// Gestión de usuarios
-			admin.GET("/users", handlers.ListAllUsers)                    // GET /api/v1/admin/users
-			admin.POST("/users", handlers.CreateUser)                     // POST /api/v1/admin/users
-			admin.PUT("/users/:id/role", handlers.UpdateUserRole)         // PUT /api/v1/admin/users/:id/role
-			admin.PUT("/users/:id/status", handlers.UpdateUserStatus)     // PUT /api/v1/admin/users/:id/status
-			admin.GET("/stats", handlers.GetSystemStats)                  // GET /api/v1/admin/stats
+			admin.GET("/users", adminController.ListAllUsers)                // GET /api/v1/admin/users
+			admin.POST("/users", adminController.CreateUser)                 // POST /api/v1/admin/users
+			admin.PUT("/users/:id/role", adminController.UpdateUserRole)     // PUT /api/v1/admin/users/:id/role
+			admin.PUT("/users/:id/status", adminController.UpdateUserStatus) // PUT /api/v1/admin/users/:id/status
+			admin.GET("/stats", adminController.GetSystemStats)              // GET /api/v1/admin/stats
 		}
 
 		// Rutas solo para root users
@@ -102,7 +114,7 @@ func main() {
 		root.Use(middleware.JWTAuth())
 		root.Use(middleware.RequireRole("root"))
 		{
-			root.DELETE("/users/:id", handlers.DeleteUser)                // DELETE /api/v1/admin/users/:id
+			root.DELETE("/users/:id", adminController.DeleteUser) // DELETE /api/v1/admin/users/:id
 		}
 	}
 
@@ -121,31 +133,31 @@ func main() {
 			},
 			"endpoints": gin.H{
 				// Public endpoints
-				"health":         "GET /api/v1/health",
-				"auth_register":  "POST /api/v1/auth/register",
-				"auth_login":     "POST /api/v1/auth/login",
-				"auth_refresh":   "POST /api/v1/auth/refresh",
-				"users_list":     "GET /api/v1/users",
-				"user_by_id":     "GET /api/v1/users/:id",
-				
+				"health":        "GET /api/v1/health",
+				"auth_register": "POST /api/v1/auth/register",
+				"auth_login":    "POST /api/v1/auth/login",
+				"auth_refresh":  "POST /api/v1/auth/refresh",
+				"users_list":    "GET /api/v1/users",
+				"user_by_id":    "GET /api/v1/users/:id",
+
 				// Protected profile endpoints
-				"profile":            "GET /api/v1/profile (protected)",
-				"update_profile":     "PUT /api/v1/profile (protected)",
-				"change_password":    "PUT /api/v1/profile/password (protected)",
-				"upload_avatar":      "POST /api/v1/profile/avatar (protected)",
-				"delete_avatar":      "DELETE /api/v1/profile/avatar (protected)",
-				
+				"profile":         "GET /api/v1/profile (protected)",
+				"update_profile":  "PUT /api/v1/profile (protected)",
+				"change_password": "PUT /api/v1/profile/password (protected)",
+				"upload_avatar":   "POST /api/v1/profile/avatar (protected)",
+				"delete_avatar":   "DELETE /api/v1/profile/avatar (protected)",
+
 				// Admin endpoints (admin role required)
-				"create_root":        "POST /api/v1/admin/create-root (public, secret key required)",
-				"admin_users_list":   "GET /api/v1/admin/users (admin)",
-				"admin_create_user":  "POST /api/v1/admin/users (admin)",
-				"admin_update_role":  "PUT /api/v1/admin/users/:id/role (admin)",
+				"create_root":         "POST /api/v1/admin/create-root (public, secret key required)",
+				"admin_users_list":    "GET /api/v1/admin/users (admin)",
+				"admin_create_user":   "POST /api/v1/admin/users (admin)",
+				"admin_update_role":   "PUT /api/v1/admin/users/:id/role (admin)",
 				"admin_update_status": "PUT /api/v1/admin/users/:id/status (admin)",
-				"admin_stats":        "GET /api/v1/admin/stats (admin)",
-				"admin_delete_user":  "DELETE /api/v1/admin/users/:id (root only)",
-				
+				"admin_stats":         "GET /api/v1/admin/stats (admin)",
+				"admin_delete_user":   "DELETE /api/v1/admin/users/:id (root only)",
+
 				// Static files
-				"avatars":            "GET /uploads/avatars/:filename",
+				"avatars": "GET /uploads/avatars/:filename",
 			},
 			"profile_fields": []string{
 				"avatar_url", "bio", "phone", "birth_date", "location", "gender",
