@@ -1,0 +1,151 @@
+# ===========================================
+# SPORTS ACTIVITIES PLATFORM - ENVIRONMENT VARIABLES
+# ===========================================
+# Copy this file to .env and update the values for your environment
+# 
+# SECURITY NOTE: Never commit the actual .env file to version control!
+# The .env file should be in your .gitignore
+# ===========================================
+
+# ===========================================
+# DATABASE CONFIGURATION
+# ===========================================
+
+# MySQL Configuration (Users API)
+MYSQL_ROOT_PASSWORD=rootpassword123
+MYSQL_DATABASE=users_db
+MYSQL_USER=appuser
+MYSQL_PASSWORD=apppassword123
+MYSQL_HOST=mysql
+MYSQL_PORT=3306
+
+# MongoDB Configuration (Activities API)
+MONGODB_DATABASE=activities_db
+MONGODB_USERNAME=mongouser
+MONGODB_PASSWORD=mongopassword123
+MONGODB_HOST=mongodb
+MONGODB_PORT=27017
+
+# ===========================================
+# BACKEND API CONFIGURATION
+# ===========================================
+
+# JWT Authentication (Users API)
+JWT_SECRET=your-super-secret-jwt-key-change-this-in-production
+JWT_EXPIRES_IN=24h
+JWT_REFRESH_EXPIRES_IN=168h
+
+# Root User Creation Secret
+ROOT_SECRET_KEY=your-root-creation-secret-change-this
+
+# Database Connection String (Users API)
+MYSQL_DSN=appuser:apppassword123@tcp(mysql:3306)/users_db?charset=utf8mb4&parseTime=True&loc=Local
+
+# Server Configuration
+GIN_MODE=debug
+PORT=8081
+
+# File Upload Configuration
+MAX_UPLOAD_SIZE=10MB
+UPLOAD_PATH=./uploads
+AVATAR_PATH=./uploads/avatars
+
+# ===========================================
+# FRONTEND CONFIGURATION  
+# ===========================================
+
+# API Base URL
+REACT_APP_API_URL=http://localhost:8081/api/v1
+REACT_APP_ACTIVITIES_API_URL=http://localhost:8082/api/v1
+REACT_APP_SEARCH_API_URL=http://localhost:8083/api/v1
+
+# App Configuration
+REACT_APP_NAME=Sports Activities Platform
+REACT_APP_VERSION=2.1.0
+REACT_APP_ENVIRONMENT=development
+
+# Build Configuration
+SKIP_PREFLIGHT_CHECK=true
+DISABLE_ESLINT_PLUGIN=false
+CI=false
+
+# ===========================================
+# THIRD-PARTY SERVICES
+# ===========================================
+
+# Email Service (Future implementation)
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_USER=your-email@gmail.com
+SMTP_PASSWORD=your-app-password
+SMTP_FROM=noreply@sportsplatform.com
+
+# Redis/Memcached Configuration
+MEMCACHED_HOST=memcached
+MEMCACHED_PORT=11211
+
+# RabbitMQ Configuration
+RABBITMQ_HOST=rabbitmq
+RABBITMQ_PORT=5672
+RABBITMQ_USER=admin
+RABBITMQ_PASSWORD=admin123
+RABBITMQ_VHOST=/
+
+# Apache Solr Configuration
+SOLR_HOST=solr
+SOLR_PORT=8983
+SOLR_CORE=activities
+
+# ===========================================
+# DEVELOPMENT CONFIGURATION
+# ===========================================
+
+# Debug and Logging
+DEBUG=true
+LOG_LEVEL=debug
+LOG_FORMAT=text
+
+# Development URLs (for local testing outside Docker)
+LOCAL_MYSQL_DSN=appuser:apppassword123@tcp(localhost:3306)/users_db?charset=utf8mb4&parseTime=True&loc=Local
+LOCAL_API_URL=http://localhost:8081/api/v1
+
+# ===========================================
+# PRODUCTION OVERRIDES
+# ===========================================
+# Uncomment and modify these for production deployment
+
+# Production JWT Secret (MUST CHANGE!)
+# JWT_SECRET=your-ultra-secure-production-jwt-secret-256-bits-minimum
+
+# Production Database (use secure passwords!)
+# MYSQL_PASSWORD=ultra-secure-production-password
+# MONGODB_PASSWORD=ultra-secure-production-password
+
+# Production API URLs
+# REACT_APP_API_URL=https://api.yourdomain.com/api/v1
+# REACT_APP_ACTIVITIES_API_URL=https://api.yourdomain.com/activities/v1
+# REACT_APP_SEARCH_API_URL=https://api.yourdomain.com/search/v1
+
+# Production Email
+# SMTP_HOST=your-production-smtp-server
+# SMTP_USER=production-email@yourdomain.com
+# SMTP_PASSWORD=your-production-smtp-password
+
+# Security Headers and CORS
+# ALLOWED_ORIGINS=https://yourdomain.com,https://www.yourdomain.com
+# ALLOWED_HEADERS=Origin,Content-Type,Authorization,X-Requested-With
+# ALLOWED_METHODS=GET,POST,PUT,DELETE,OPTIONS
+
+# ===========================================
+# NOTES FOR DEVELOPERS
+# ===========================================
+#
+# 1. SECURITY: Change all default passwords before production!
+# 2. SECRETS: Use proper secret management in production (AWS Secrets Manager, etc.)
+# 3. DATABASE: Use connection pooling and read replicas for production
+# 4. MONITORING: Add health checks and logging aggregation
+# 5. BACKUP: Implement automated database backups
+# 6. SSL: Configure HTTPS with proper certificates
+# 7. RATE LIMITING: Implement API rate limiting for production
+#
+# ===========================================

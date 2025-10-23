@@ -1,10 +1,12 @@
-module users-api
+module arq-soft-II
 
-go 1.21
+go 1.24.3
 
 require (
+	github.com/bradfitz/gomemcache v0.0.0-20250403215159-8d39553ac7cf
 	github.com/gin-gonic/gin v1.9.1
-	github.com/golang-jwt/jwt/v5 v5.0.0
+	github.com/golang-jwt/jwt/v5 v5.3.0
+	github.com/rabbitmq/amqp091-go v1.10.0
 	golang.org/x/crypto v0.10.0
 	gorm.io/driver/mysql v1.5.1
 	gorm.io/gorm v1.25.1
