@@ -9,8 +9,6 @@ import (
 	"time"
 )
 
-// ReservasRepository define las operaciones de datos para Reservas
-// Patrón Repository: abstrae el acceso a datos del resto de la aplicación
 type ReservasRepository interface {
 	// List retorna todos los Reservas de la base de datos
 	List(ctx context.Context) ([]domain.Reserva, error)
@@ -33,7 +31,7 @@ type ReservaPublisher interface {
 }
 
 type ReservasServiceImpl struct {
-	repository ReservasRepository // Inyección de dependencia
+	repository ReservasRepository
 	publisher  ReservaPublisher
 }
 
@@ -46,8 +44,7 @@ func NewReservasService(repository ReservasRepository, publisher ReservaPublishe
 	}
 }
 
-// List obtiene todos los Reservas
-// ✅ IMPLEMENTADO - Delegación simple al repository
+// List obtiene todas las Reservas
 func (s *ReservasServiceImpl) List(ctx context.Context) ([]domain.Reserva, error) {
 	// En este caso, no hay lógica de negocio especial
 	// Solo delegamos al repository
@@ -55,7 +52,6 @@ func (s *ReservasServiceImpl) List(ctx context.Context) ([]domain.Reserva, error
 }
 
 // Create valida y crea un nuevo Reserva
-// Consigna 1: Validar name no vacío y price >= 0
 func (s *ReservasServiceImpl) Create(ctx context.Context, Reserva domain.Reserva) (domain.Reserva, error) {
 	// Validar campos del Reserva
 	if err := s.validateReserva(Reserva); err != nil {
@@ -75,7 +71,6 @@ func (s *ReservasServiceImpl) Create(ctx context.Context, Reserva domain.Reserva
 }
 
 // GetByID obtiene un Reserva por su ID
-// Consigna 2: Validar formato de ID antes de consultar DB
 func (s *ReservasServiceImpl) GetByID(ctx context.Context, id string) (domain.Reserva, error) {
 	Reserva, err := s.repository.GetByID(ctx, id)
 	if err != nil {
@@ -86,7 +81,6 @@ func (s *ReservasServiceImpl) GetByID(ctx context.Context, id string) (domain.Re
 }
 
 // Update actualiza un Reserva existente
-// Consigna 3: Validar campos antes de actualizar
 func (s *ReservasServiceImpl) Update(ctx context.Context, id string, Reserva domain.Reserva) (domain.Reserva, error) {
 	_, err := s.repository.GetByID(ctx, id)
 	if err != nil {
@@ -112,7 +106,6 @@ func (s *ReservasServiceImpl) Update(ctx context.Context, id string, Reserva dom
 }
 
 // Delete elimina un Reserva por ID
-// Consigna 4: Validar ID antes de eliminar
 func (s *ReservasServiceImpl) Delete(ctx context.Context, id string) error {
 	_, err := s.repository.GetByID(ctx, id)
 	if err != nil {
@@ -141,7 +134,5 @@ func (s *ReservasServiceImpl) validateReserva(Reserva domain.Reserva) error {
 	if Reserva.Date.Before(time.Now()) {
 		return errors.New("la fecha de la reserva debe ser posterior a la fecha actual")
 	}
-
-	// ✅ Todas las validaciones pasaron
 	return nil
 }

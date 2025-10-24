@@ -1,5 +1,5 @@
 // Seed some data if the collection is empty
-db = db.getSiblingDB(process.env.MONGO_INITDB_DATABASE || "demo");
+db = db.getSiblingDB(process.env.MONGO_DB || "demo");
 const col = db.getCollection("reservas");
 
 if (col.countDocuments() === 0) {
@@ -45,7 +45,7 @@ if (col.countDocuments() === 0) {
       updated_at: new Date(),
     },
   ]);
-  print("Seeded initial reservas");
+  log.print("Seeded initial reservas");
 } else {
-  print("Reservas already present, skipping seed");
+  log.print("Reservas already present, skipping seed");
 }
