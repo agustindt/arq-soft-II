@@ -28,15 +28,21 @@ type ReservasRepository interface {
 	Delete(ctx context.Context, id string) error
 } // ReservasServiceImpl implementa ReservasService
 
+type ReservaPublisher interface {
+	Publish(ctx context.Context, action string, reservaID string) error
+}
+
 type ReservasServiceImpl struct {
 	repository ReservasRepository // Inyección de dependencia
+	publisher  ReservaPublisher
 }
 
 // NewReservasService crea una nueva instancia del service
 // Pattern: Dependency Injection - recibe dependencies como parámetros
-func NewReservasService(repository ReservasRepository) ReservasServiceImpl {
+func NewReservasService(repository ReservasRepository, publisher ReservaPublisher) ReservasServiceImpl {
 	return ReservasServiceImpl{
 		repository: repository,
+		publisher:  publisher,
 	}
 }
 
@@ -59,6 +65,10 @@ func (s *ReservasServiceImpl) Create(ctx context.Context, Reserva domain.Reserva
 	created, err := s.repository.Create(ctx, Reserva)
 	if err != nil {
 		return domain.Reserva{}, fmt.Errorf("error creating Reserva in repository: %w", err)
+	}
+
+	if err := s.publisher.Publish(ctx, "create", created.ID); err != nil {
+		return domain.Reserva{}, fmt.Errorf("error publishing Reserva creation: %w", err)
 	}
 
 	return created, nil
@@ -94,6 +104,10 @@ func (s *ReservasServiceImpl) Update(ctx context.Context, id string, Reserva dom
 		return domain.Reserva{}, fmt.Errorf("error updating Reserva in repository: %w", err)
 	}
 
+	if err := s.publisher.Publish(ctx, "create", updated.ID); err != nil {
+		return domain.Reserva{}, fmt.Errorf("error publishing Reserva creation: %w", err)
+	}
+
 	return updated, nil
 }
 
@@ -108,6 +122,10 @@ func (s *ReservasServiceImpl) Delete(ctx context.Context, id string) error {
 	err = s.repository.Delete(ctx, id)
 	if err != nil {
 		return fmt.Errorf("error deleting Reserva in repository: %w", err)
+	}
+
+	if err := s.publisher.Publish(ctx, "create", id); err != nil {
+		return fmt.Errorf("error publishing Reserva creation: %w", err)
 	}
 
 	return nil
