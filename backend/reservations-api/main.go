@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"reservations/clients"
 	"reservations/config"
 	"reservations/controllers"
 	"reservations/middleware"
@@ -24,8 +25,16 @@ func main() {
 	// Capa de datos: maneja operaciones DB
 	ReservasMongoRepo := repository.NewMongoReservasRepository(ctx, cfg.Mongo.URI, cfg.Mongo.DB, "Reservas")
 
+	reservasQueue := clients.NewRabbitMQClient(
+		cfg.RabbitMQ.Username,
+		cfg.RabbitMQ.Password,
+		cfg.RabbitMQ.QueueName,
+		cfg.RabbitMQ.Host,
+		cfg.RabbitMQ.Port,
+	)
+
 	// services
-	ReservaService := services.NewReservasService(ReservasMongoRepo)
+	ReservaService := services.NewReservasService(ReservasMongoRepo, reservasQueue)
 
 	// controllers
 	ReservaController := controllers.NewReservasController(&ReservaService)
