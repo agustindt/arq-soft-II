@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strings"
 
-	"users-api/services"
+	"arq-soft-II/backend/users-api/services"
 
 	"github.com/gin-gonic/gin"
 )

@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	"users-api/config"
-	"users-api/models"
+	"arq-soft-II/backend/users-api/config"
+	"arq-soft-II/backend/users-api/models"
 
 	"github.com/gin-gonic/gin"
 )

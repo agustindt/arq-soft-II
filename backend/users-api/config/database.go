@@ -6,7 +6,7 @@ import (
 	"os"
 	"time"
 
-	"users-api/models"
+	"arq-soft-II/backend/users-api/models"
 
 	"gorm.io/driver/mysql"
 	"gorm.io/gorm"
