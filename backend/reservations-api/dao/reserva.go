@@ -1,7 +1,7 @@
 package dao
 
 import (
-	"reservations/domain"
+	"reservations-api/domain"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"

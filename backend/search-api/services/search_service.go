@@ -2,51 +2,42 @@ package services
 
 import (
 	"encoding/json"
-	"log"
-	"time"
+	"fmt"
+	"net/url"
+	"strings"
 
-	"arq-soft-II/config/cache"
+	"search-api/models"
+	"search-api/repository"
 )
 
 type SearchService struct {
-	cache *cache.Cache
+	repo  *repository.SolrRepository
+	cache *DualCache
 }
 
-type SearchResult struct {
-	Query     string   `json:"query"`
-	Results   []string `json:"results"`
-	Timestamp string   `json:"timestamp"`
+func NewSearchService(r *repository.SolrRepository, c *DualCache) *SearchService {
+	return &SearchService{repo: r, cache: c}
 }
 
-func NewSearchService(c *cache.Cache) *SearchService {
-	return &SearchService{cache: c}
+func normalizeKey(q string, page, size int, sort string, filters url.Values) string {
+	return fmt.Sprintf("q=%s|p=%d|s=%d|o=%s|f=%s", q, page, size, sort, filters.Encode())
 }
 
-func (s *SearchService) Search(query string) (*SearchResult, error) {
-	cacheKey := "search:" + query
-
-	//  Intentar obtener desde caché
-	if data, err := s.cache.Get(cacheKey); err == nil {
-		var result SearchResult
-		if err := json.Unmarshal(data, &result); err == nil {
-			log.Println("⚡ Resultado recuperado desde caché:", query)
-			return &result, nil
-		}
+func (s *SearchService) Search(q string, page, size int, sort string, filters url.Values) (models.SearchResult[map[string]any], error) {
+	key := "search:" + normalizeKey(strings.TrimSpace(q), page, size, sort, filters)
+	if str, ok := s.cache.Get(key); ok {
+		var cached models.SearchResult[map[string]any]
+		_ = json.Unmarshal([]byte(str), &cached)
+		return cached, nil
 	}
-
-	//  Si no está, simulamos búsqueda (a futuro se integrará Solr)
-	log.Println("🔍 Realizando búsqueda simulada:", query)
-	result := SearchResult{
-		Query:     query,
-		Results:   []string{"Actividad 1", "Actividad 2", "Actividad 3"},
-		Timestamp: time.Now().Format(time.RFC3339),
+	res, err := s.repo.Search(q, page, size, sort, filters)
+	if err != nil {
+		return res, err
 	}
-
-	// Guardar en caché
-	data, _ := json.Marshal(result)
-	if err := s.cache.Set(cacheKey, data, 30*time.Second); err != nil {
-		log.Println(" No se pudo guardar en caché:", err)
-	}
-
-	return &result, nil
+	b, _ := json.Marshal(res)
+	s.cache.Set(key, string(b))
+	return res, nil
 }
+
+// Invalidar cache rápida para búsquedas repetidas
+func (s *SearchService) Invalidate() { s.cache.InvalidatePrefix("search:") }

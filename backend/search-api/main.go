@@ -1,83 +1,50 @@
 package main
 
 import (
-	"fmt"
+	"context"
 	"log"
 	"net/http"
-	"os"
+	"time"
 
-	"arq-soft-II/backend/search-api/config"
-	"arq-soft-II/backend/search-api/controllers"
-	"arq-soft-II/backend/search-api/services"
-	"arq-soft-II/config/cache"
-	"arq-soft-II/config/httpx"
-	"arq-soft-II/config/rabbitmq"
+	"search-api/clients"
+	"search-api/config"
+	"search-api/controllers"
+	"search-api/middleware"
+	"search-api/repository"
+	"search-api/services"
+
+	"github.com/gin-gonic/gin"
 )
 
 func main() {
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = "8083"
-	}
+	cfg := config.Load()
 
-	// 🔹 Conectarse a Memcached
-	memcachedURL := os.Getenv("MEMCACHED_URL")
-	if memcachedURL == "" {
-		memcachedURL = "memcached:11211" // valor por defecto si no hay env
-	}
+	// Repo Solr + Cache dual
+	repo := repository.NewSolrRepository(cfg.SolrURL, cfg.SolrCore)
+	cache := services.NewDualCache(cfg.MemcachedURL, cfg.LocalCacheTTL)
+	svc := services.NewSearchService(repo, cache)
+	ctrl := controllers.NewSearchController(svc)
 
-	memc, err := cache.New(memcachedURL)
+	// Consumer RabbitMQ: sincroniza índice
+	ctx := context.Background()
+	actCli := clients.NewActivitiesClient(cfg.ActivitiesAPI)
+	consumer, err := clients.NewConsumer(cfg.RabbitURL, cfg.RabbitQueue, repo, actCli)
 	if err != nil {
-		log.Fatal("❌ Error conectando con Memcached:", err)
+		log.Fatalf("rabbit consumer: %v", err)
 	}
-	defer log.Println("✅ Conexión Memcached cerrada.")
-
-	// 🔹 Crear service y controller
-	service := services.NewSearchService(memc)
-	controller := controllers.NewSearchController(service)
-
-	// 🔹 Conectarse a RabbitMQ
-	rabbitURL := os.Getenv("RABBITMQ_URL")
-	if rabbitURL == "" {
-		rabbitURL = "amqp://admin:admin@rabbitmq:5672/" // valor por defecto
+	if err := consumer.Start(ctx); err != nil {
+		log.Fatalf("consumer start: %v", err)
 	}
 
-	mq, err := rabbitmq.New(rabbitURL)
-	if err != nil {
-		log.Fatal("❌ Error conectando a RabbitMQ:", err)
+	// HTTP
+	r := gin.Default()
+	r.Use(middleware.CORS())
+	r.GET("/health", ctrl.Health)
+	r.GET("/search", ctrl.Search)
+
+	srv := &http.Server{Addr: ":" + cfg.Port, Handler: r, ReadHeaderTimeout: 10 * time.Second}
+	log.Printf("search-api listening on :%s", cfg.Port)
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+		log.Fatalf("server error: %v", err)
 	}
-	defer mq.Close()
-
-	// Declarar exchange y queue
-	err = mq.DeclareSetup("entity.events", "search-sync", "activities.*")
-	if err != nil {
-		log.Fatal("❌ Error declarando exchange/queue:", err)
-	}
-
-	// Iniciar el consumer (escucha eventos de Activities)
-	config.StartRabbitConsumer(mq, service)
-
-	// 🔹 Endpoints públicos
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "Search API is running")
-	})
-
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-		fmt.Fprint(w, "Search API - Sports Activities Platform")
-	})
-
-	http.HandleFunc("/search", controller.HandleSearch)
-
-	// 🔹 Endpoint interno protegido por X-Service-Token
-	http.Handle("/internal/reindex",
-		httpx.RequireServiceToken(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-			w.WriteHeader(http.StatusOK)
-			fmt.Fprint(w, "Petición interna autorizada (reindex OK)")
-		})),
-	)
-
-	log.Printf("🚀 Search API corriendo en puerto %s", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

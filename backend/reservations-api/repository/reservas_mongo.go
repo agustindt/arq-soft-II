@@ -4,8 +4,8 @@ import (
 	"context"
 	"errors"
 	"log"
-	"reservations/dao"
-	"reservations/domain"
+	"reservations-api/dao"
+	"reservations-api/domain"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"

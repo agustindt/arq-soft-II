@@ -4,12 +4,12 @@ import (
 	"context"
 	"log"
 	"net/http"
-	"reservations/clients"
-	"reservations/config"
-	"reservations/controllers"
-	"reservations/middleware"
-	"reservations/repository"
-	"reservations/services"
+	"reservations-api/clients"
+	"reservations-api/config"
+	"reservations-api/controllers"
+	"reservations-api/middleware"
+	"reservations-api/repository"
+	"reservations-api/services"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -35,10 +35,8 @@ func main() {
 
 	// services
 	ReservaService := services.NewReservasService(ReservasMongoRepo, reservasQueue)
-
 	// controllers
 	ReservaController := controllers.NewReservasController(&ReservaService)
-
 	// Configurar router HTTP con Gin
 	router := gin.Default()
 

@@ -2,19 +2,21 @@ FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
-COPY ../../go.mod ../../go.sum ./
+# Copiar archivos desde la ruta correcta
+COPY backend/search-api/go.mod backend/search-api/go.sum ./
 RUN go mod download
 
-COPY . .
+# Copiar el código fuente
+COPY backend/search-api/ ./
 
-WORKDIR /app/backend/search-api
-RUN CGO_ENABLED=0 GOOS=linux go build -o /main .
+# Compilar
+RUN go build -o search-api .
 
+# Imagen final
 FROM alpine:latest
-RUN apk --no-cache add ca-certificates
 WORKDIR /root/
-
-COPY --from=builder /main .
+COPY --from=builder /app/search-api .
 
 EXPOSE 8083
-CMD ["./main"]
+
+CMD ["./search-api"]

@@ -3,7 +3,7 @@ package controllers
 import (
 	"context"
 	"net/http"
-	"reservations/domain"
+	"reservations-api/domain"
 
 	"github.com/gin-gonic/gin"
 )

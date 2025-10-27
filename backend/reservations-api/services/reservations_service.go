@@ -4,7 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reservations/domain"
+	"reservations-api/domain"
 	"strings"
 	"time"
 )
