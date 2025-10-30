@@ -34,7 +34,7 @@ func main() {
 	)
 
 	// services
-	ReservaService := services.NewReservasService(ReservasMongoRepo, reservasQueue)
+	ReservaService := services.NewReservasService(ReservasMongoRepo, reservasQueue, nil)
 
 	// controllers
 	ReservaController := controllers.NewReservasController(&ReservaService)
