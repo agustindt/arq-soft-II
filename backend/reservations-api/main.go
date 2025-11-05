@@ -34,7 +34,7 @@ func main() {
 	)
 
 	// services
-	ReservaService := services.NewReservasService(ReservasMongoRepo, reservasQueue, nil)
+	ReservaService := services.NewReservasService(ReservasMongoRepo, reservasQueue)
 
 	// controllers
 	ReservaController := controllers.NewReservasController(&ReservaService)
@@ -49,22 +49,23 @@ func main() {
 	router.GET("/healthz", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{"status": "ok"})
 	})
+	usersAPI := cfg.UsersAPIURL
 
 	// Router
 	// GET /Reservas - listar todos los Reservas
 	router.GET("/reservas", ReservaController.GetReservas)
 
 	// POST /Reservas - crear nuevo Reserva
-	router.POST("/reservas", ReservaController.CreateReserva)
+	router.POST("/reservas", middleware.AdminOnly(usersAPI), ReservaController.CreateReserva)
 
 	// GET /Reservas/:id - obtener Reserva por ID
 	router.GET("/reservas/:id", ReservaController.GetReservaByID)
 
 	// PUT /Reservas/:id - actualizar Reserva existente
-	router.PUT("/reservas/:id", ReservaController.UpdateReserva)
+	router.PUT("/reservas/:id", middleware.AdminOnly(usersAPI), ReservaController.UpdateReserva)
 
 	// DELETE /Reservas/:id - eliminar Reserva
-	router.DELETE("/reservas/:id", ReservaController.DeleteReserva)
+	router.DELETE("/reservas/:id", middleware.AdminOnly(usersAPI), ReservaController.DeleteReserva)
 
 	// Configuración del server
 	srv := &http.Server{

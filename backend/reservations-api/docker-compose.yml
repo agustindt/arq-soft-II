@@ -37,6 +37,10 @@ services:
       - mongo
       - rabbitmq
     environment:
+      PORT: 8080
+      UsersAPIURL: http://localhost:8081
+      MONGO_DB: demo
+      MONGO_COLLECTION: reservas
       MONGO_URI: mongodb://mongo:27017/reservasdb
       RABBITMQ_HOST: rabbitmq
       RABBITMQ_PORT: 5672

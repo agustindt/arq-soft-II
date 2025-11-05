@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"reservations/clients"
 	"reservations/domain"
 	"strings"
 	"time"
@@ -34,14 +33,12 @@ type ReservaPublisher interface {
 type ReservasServiceImpl struct {
 	repository ReservasRepository
 	publisher  ReservaPublisher
-	userClient *clients.UserClient
 }
 
-func NewReservasService(repository ReservasRepository, publisher ReservaPublisher, userClient *clients.UserClient) ReservasServiceImpl {
+func NewReservasService(repository ReservasRepository, publisher ReservaPublisher) ReservasServiceImpl {
 	return ReservasServiceImpl{
 		repository: repository,
 		publisher:  publisher,
-		userClient: userClient,
 	}
 }
 
@@ -51,15 +48,9 @@ func (s *ReservasServiceImpl) List(ctx context.Context) ([]domain.Reserva, error
 }
 
 // Create valida y crea un nuevo Reserva
-func (s *ReservasServiceImpl) Create(ctx context.Context, Reserva domain.Reserva, token string) (domain.Reserva, error) {
+func (s *ReservasServiceImpl) Create(ctx context.Context, Reserva domain.Reserva) (domain.Reserva, error) {
 	// Validar user
-	user, err := s.userClient.ValidateToken(token)
-	if err != nil {
-		return domain.Reserva{}, fmt.Errorf("error validating user: %w", err)
-	}
-	if !user.Valid || (user.Role != "admin" && user.Role != "owner") {
-		return domain.Reserva{}, fmt.Errorf("user not authorized for creation")
-	}
+
 	// Validar campos del Reserva
 	if err := s.validateReserva(Reserva); err != nil {
 		return domain.Reserva{}, fmt.Errorf("validation error: %w", err)
@@ -88,19 +79,12 @@ func (s *ReservasServiceImpl) GetByID(ctx context.Context, id string) (domain.Re
 }
 
 // Update actualiza un Reserva existente
-func (s *ReservasServiceImpl) Update(ctx context.Context, id string, Reserva domain.Reserva, token string) (domain.Reserva, error) {
+func (s *ReservasServiceImpl) Update(ctx context.Context, id string, Reserva domain.Reserva) (domain.Reserva, error) {
 	_, err := s.repository.GetByID(ctx, id)
 	if err != nil {
 		return domain.Reserva{}, fmt.Errorf("reserva does not exists: %w", err)
 	}
 	// Validar user
-	user, err := s.userClient.ValidateToken(token)
-	if err != nil {
-		return domain.Reserva{}, fmt.Errorf("error validating user: %w", err)
-	}
-	if !user.Valid || (user.Role != "admin" && user.Role != "owner") {
-		return domain.Reserva{}, fmt.Errorf("user not authorized for update")
-	}
 
 	// Validar campos del Reserva
 	if err := s.validateReserva(Reserva); err != nil {
@@ -121,19 +105,12 @@ func (s *ReservasServiceImpl) Update(ctx context.Context, id string, Reserva dom
 }
 
 // Delete elimina un Reserva por ID
-func (s *ReservasServiceImpl) Delete(ctx context.Context, id string, token string) error {
+func (s *ReservasServiceImpl) Delete(ctx context.Context, id string) error {
 	_, err := s.repository.GetByID(ctx, id)
 	if err != nil {
 		return fmt.Errorf("reserva does not exists: %w", err)
 	}
 	// Validar User
-	user, err := s.userClient.ValidateToken(token)
-	if err != nil {
-		return fmt.Errorf("error validating user: %w", err)
-	}
-	if !user.Valid || (user.Role != "admin" && user.Role != "owner") {
-		return fmt.Errorf("user not authorized for deletion")
-	}
 
 	err = s.repository.Delete(ctx, id)
 	if err != nil {

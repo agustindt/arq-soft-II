@@ -13,16 +13,16 @@ type ReservasService interface {
 	List(ctx context.Context) ([]domain.Reserva, error)
 
 	// Create valida y crea un nuevo Reserva
-	Create(ctx context.Context, reserva domain.Reserva, token string) (domain.Reserva, error)
+	Create(ctx context.Context, reserva domain.Reserva) (domain.Reserva, error)
 
 	// GetByID obtiene un Reserva por su ID
 	GetByID(ctx context.Context, id string) (domain.Reserva, error)
 
 	// Update actualiza un Reserva existente
-	Update(ctx context.Context, id string, reserva domain.Reserva, token string) (domain.Reserva, error)
+	Update(ctx context.Context, id string, reserva domain.Reserva) (domain.Reserva, error)
 
 	// Delete elimina un Reserva por ID
-	Delete(ctx context.Context, id string, token string) error
+	Delete(ctx context.Context, id string) error
 }
 
 // ReservasController maneja las peticiones HTTP para Reservas
@@ -63,13 +63,8 @@ func (c *ReservasController) CreateReserva(ctx *gin.Context) {
 		})
 		return
 	}
-	token := ctx.GetHeader("Authorization")
-	if token == "" {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
-		return
-	}
 
-	Reserva, err := c.service.Create(ctx, newReserva, token)
+	Reserva, err := c.service.Create(ctx, newReserva)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to create Reserva",
@@ -133,13 +128,8 @@ func (c *ReservasController) UpdateReserva(ctx *gin.Context) {
 		})
 		return
 	}
-	token := ctx.GetHeader("Authorization")
-	if token == "" {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
-		return
-	}
 
-	updatedReserva, err := c.service.Update(ctx, id, toUpdate, token)
+	updatedReserva, err := c.service.Update(ctx, id, toUpdate)
 	if err != nil {
 		if err.Error() == "Reserva not found" {
 			ctx.JSON(http.StatusNotFound, gin.H{
@@ -169,13 +159,8 @@ func (c *ReservasController) DeleteReserva(ctx *gin.Context) {
 		})
 		return
 	}
-	token := ctx.GetHeader("Authorization")
-	if token == "" {
-		ctx.JSON(http.StatusUnauthorized, gin.H{"error": "missing token"})
-		return
-	}
 
-	err := c.service.Delete(ctx, id, token)
+	err := c.service.Delete(ctx, id)
 	if err != nil {
 		if err.Error() == "Reserva not found" {
 			ctx.JSON(http.StatusNotFound, gin.H{
