@@ -4,12 +4,15 @@ import (
 	"context"
 	"log"
 	"net/http"
+	"os"
+	"os/signal"
 	"reservations/clients"
 	"reservations/config"
 	"reservations/controllers"
 	"reservations/middleware"
 	"reservations/repository"
 	"reservations/services"
+	"syscall"
 	"time"
 
 	"github.com/gin-gonic/gin"
@@ -78,8 +81,34 @@ func main() {
 	log.Printf(" Health check: http://localhost:%s/healthz", cfg.Port)
 	log.Printf(" Reservas API: http://localhost:%s/Reservas", cfg.Port)
 
-	// Iniciar servidor
-	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-		log.Fatalf("server error: %v", err)
+	// Iniciar servidor en goroutine para poder manejar shutdown gracefully
+	go func() {
+		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+			log.Fatalf("server error: %v", err)
+		}
+	}()
+
+	// Escuchar señales del sistema para shutdown
+	quit := make(chan os.Signal, 1)
+	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
+	<-quit
+
+	log.Println("Shutting down server...")
+
+	// Tiempo máximo para completar shutdown
+	ctxShutdown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	defer cancel()
+
+	if err := srv.Shutdown(ctxShutdown); err != nil {
+		log.Fatalf("server Shutdown Failed:%+v", err)
 	}
+
+	// Cerrar clientes externos (RabbitMQ)
+	if reservasQueue != nil {
+		if err := reservasQueue.Close(); err != nil {
+			log.Printf("error closing rabbitmq client: %v", err)
+		}
+	}
+
+	log.Println("Server exited properly")
 }

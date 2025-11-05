@@ -49,8 +49,6 @@ func (s *ReservasServiceImpl) List(ctx context.Context) ([]domain.Reserva, error
 
 // Create valida y crea un nuevo Reserva
 func (s *ReservasServiceImpl) Create(ctx context.Context, Reserva domain.Reserva) (domain.Reserva, error) {
-	// Validar user
-
 	// Validar campos del Reserva
 	if err := s.validateReserva(Reserva); err != nil {
 		return domain.Reserva{}, fmt.Errorf("validation error: %w", err)
@@ -84,7 +82,6 @@ func (s *ReservasServiceImpl) Update(ctx context.Context, id string, Reserva dom
 	if err != nil {
 		return domain.Reserva{}, fmt.Errorf("reserva does not exists: %w", err)
 	}
-	// Validar user
 
 	// Validar campos del Reserva
 	if err := s.validateReserva(Reserva); err != nil {
@@ -110,7 +107,6 @@ func (s *ReservasServiceImpl) Delete(ctx context.Context, id string) error {
 	if err != nil {
 		return fmt.Errorf("reserva does not exists: %w", err)
 	}
-	// Validar User
 
 	err = s.repository.Delete(ctx, id)
 	if err != nil {
