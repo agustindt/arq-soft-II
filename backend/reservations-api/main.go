@@ -36,8 +36,13 @@ func main() {
 		cfg.RabbitMQ.Port,
 	)
 
+	// crear cola de publicación con workers y retries
+	publishQueue := services.NewPublishQueue(reservasQueue, 200, 3, 200*time.Millisecond)
+	// start workers (use ctx so they can be cancelled on shutdown)
+	publishQueue.Start(ctx, 2)
+
 	// services
-	ReservaService := services.NewReservasService(ReservasMongoRepo, reservasQueue)
+	ReservaService := services.NewReservasService(ReservasMongoRepo, publishQueue)
 
 	// controllers
 	ReservaController := controllers.NewReservasController(&ReservaService)
@@ -81,7 +86,7 @@ func main() {
 	log.Printf(" Health check: http://localhost:%s/healthz", cfg.Port)
 	log.Printf(" Reservas API: http://localhost:%s/Reservas", cfg.Port)
 
-	// Iniciar servidor en goroutine para poder manejar shutdown gracefully
+	// Iniciar servidor en goroutine para poder manejar shutdown tranquilamente
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 			log.Fatalf("server error: %v", err)
@@ -103,7 +108,10 @@ func main() {
 		log.Fatalf("server Shutdown Failed:%+v", err)
 	}
 
-	// Cerrar clientes externos (RabbitMQ)
+	// Detener publish queue y cerrar clientes externos (RabbitMQ)
+	if publishQueue != nil {
+		publishQueue.Stop()
+	}
 	if reservasQueue != nil {
 		if err := reservasQueue.Close(); err != nil {
 			log.Printf("error closing rabbitmq client: %v", err)

@@ -9,7 +9,8 @@ import (
 
 type Reserva struct {
 	ID        primitive.ObjectID `json:"id" bson:"_id,omitempty"`
-	UserID    int                `json:"user_id" bson:"user_id"`
+	UsersID   []int              `json:"users_id" bson:"users_id"`
+	Cupo      int                `json:"cupo" bson:"cupo"`
 	Actividad string             `json:"actividad" bson:"actividad"`
 	Date      time.Time          `json:"date" bson:"date"`
 	Status    string             `json:"status" bson:"status"` //Pendiente, confirmada, cancelada
@@ -21,7 +22,8 @@ type Reserva struct {
 func (d Reserva) ToDomain() domain.Reserva {
 	return domain.Reserva{
 		ID:        d.ID.Hex(), // ObjectID -> string
-		UserID:    d.UserID,
+		UsersID:   d.UsersID,
+		Cupo:      d.Cupo,
 		Actividad: d.Actividad,
 		Date:      d.Date,
 		Status:    d.Status,
@@ -40,7 +42,8 @@ func FromDomain(domainItem domain.Reserva) Reserva {
 
 	return Reserva{
 		ID:        objectID,
-		UserID:    domainItem.UserID,
+		UsersID:   domainItem.UsersID,
+		Cupo:      domainItem.Cupo,
 		Actividad: domainItem.Actividad,
 		Date:      domainItem.Date,
 		Status:    domainItem.Status,

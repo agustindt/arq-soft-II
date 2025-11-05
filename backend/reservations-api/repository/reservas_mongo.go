@@ -137,7 +137,8 @@ func (r *MongoReservasRepository) Update(ctx context.Context, id string, Reserva
 	update := bson.M{
 		"$set": bson.M{
 			"actividad":  Reserva.Actividad,
-			"user_id":    Reserva.UserID,
+			"users_id":   Reserva.UsersID,
+			"cupo":       Reserva.Cupo,
 			"date":       Reserva.Date,
 			"status":     Reserva.Status,
 			"updated_at": time.Now().UTC(), // Actualizar timestamp
