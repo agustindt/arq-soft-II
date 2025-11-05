@@ -26,18 +26,17 @@ services:
       timeout: 5s
       retries: 5
 
-  # 🏋️ API de Actividades (entidad principal)
-  activities-api:
-    build:
-      context: .
-      dockerfile: ./backend/activities-api/Dockerfile
-    ports:
-      - "8082:8082"
+  reservations-service:
+    build: .
+    container_name: reservations-service
     environment:
-      - PORT=8082
-      - MONGO_URI=mongodb://mongo:27017/activities_db
-      - USERS_API_URL=http://users-api:8081
-      - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672/
+      RABBITMQ_USER: admin
+      RABBITMQ_PASS: admin123
+      RABBITMQ_HOST: rabbitmq  # IMPORTANTE: usar el nombre del servicio, no localhost
+      RABBITMQ_PORT: 5672
+      RABBITMQ_QUEUE_NAME: reservas
+    ports:
+      - "8080:8080"
     depends_on:
       mongo:
         condition: service_started
@@ -116,16 +115,13 @@ services:
   # 🐇 RabbitMQ (mensajería)
   rabbitmq:
     image: rabbitmq:3-management
+    container_name: rabbitmq
     ports:
-      - "5672:5672"
-      - "15672:15672"
+      - "5672:5672"       # Puerto de comunicación
+      - "15672:15672"     # Dashboard web
     environment:
-      - RABBITMQ_DEFAULT_USER=admin
-      - RABBITMQ_DEFAULT_PASS=admin
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-      - ./config/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json
-      - ./config/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
     healthcheck:
       test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 30s
