@@ -63,3 +63,21 @@ func (r RabbitMQClient) Publish(ctx context.Context, action string, reservaID st
 	}
 	return nil
 }
+
+// Close cierra el channel y la conexión a RabbitMQ.
+func (r *RabbitMQClient) Close() error {
+	var errRet error
+	if r.channel != nil {
+		if err := r.channel.Close(); err != nil {
+			log.Printf("error closing rabbit channel: %v", err)
+			errRet = err
+		}
+	}
+	if r.connection != nil {
+		if err := r.connection.Close(); err != nil {
+			log.Printf("error closing rabbit connection: %v", err)
+			errRet = err
+		}
+	}
+	return errRet
+}

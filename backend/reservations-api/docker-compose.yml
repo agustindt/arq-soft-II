@@ -1,41 +1,94 @@
-version: '3.9'
-
 services:
   mongo:
-    image: mongo:6.0
+    image: mongo:6
     container_name: mongo
     restart: always
     ports:
       - "27017:27017"
     environment:
-      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
-      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+      MONGO_INITDB_DATABASE: reservasdb
+    healthcheck:
+      test: ["CMD", "mongo", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
-      - mongo_data:/data/db
-    networks:
-      - micro-net
+      - ../mongo_data:/data/db
+      - ./mongo-init:/docker-entrypoint-initdb.d
 
   rabbitmq:
-    image: rabbitmq:3.12-management
+    image: rabbitmq:3-management
     container_name: rabbitmq
     restart: always
     ports:
-      - "5672:5672"       # Puerto para AMQP
-      - "15672:15672"     # Dashboard web
+      - "5672:5672"
+      - "15672:15672"
     environment:
-      RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
-      RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-    networks:
-      - micro-net
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
 
-# Redes compartidas para microservicios
-networks:
-  micro-net:
-    driver: bridge
+  reservations-service:
+    build:
+      context: .              # 👈 porque el Dockerfile está en esta misma carpeta
+      dockerfile: ./dockerfile   # 👈 sube un nivel, ya que tu Dockerfile está en backend/
+    container_name: reservations-service
+    restart: always
+    depends_on:
+      - mongo
+      - rabbitmq
+    environment:
+      PORT: 8080
+      UsersAPIURL: http://localhost:8081
+      MONGO_DB: demo
+      MONGO_COLLECTION: reservas
+      MONGO_URI: mongodb://mongo:27017/reservasdb
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: admin
+      RABBITMQ_PASS: admin123
+      RABBITMQ_QUEUE_NAME: reservas
+      JWT_SECRET: your-super-secret-jwt-key
+    ports:
+      - "8080:8080"
 
-# Volúmenes persistentes
-volumes:
-  mongo_data:
-  rabbitmq_data:
+# version: '3.9'
+
+# services:
+#   mongo:
+#     image: mongo:6.0
+#     container_name: mongo
+#     restart: always
+#     ports:
+#       - "27017:27017"
+#     environment:
+#       MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER}
+#       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD}
+#     volumes:
+#       - mongo_data:/data/db
+#     networks:
+#       - micro-net
+
+#   rabbitmq:
+#     image: rabbitmq:3.12-management
+#     container_name: rabbitmq
+#     restart: always
+#     ports:
+#       - "5672:5672"       # Puerto para AMQP
+#       - "15672:15672"     # Dashboard web
+#     environment:
+#       RABBITMQ_DEFAULT_USER: ${RABBITMQ_USER}
+#       RABBITMQ_DEFAULT_PASS: ${RABBITMQ_PASSWORD}
+#     volumes:
+#       - rabbitmq_data:/var/lib/rabbitmq
+#     networks:
+#       - micro-net
+
+# # Redes compartidas para microservicios
+# networks:
+#   micro-net:
+#     driver: bridge
+
+# # Volúmenes persistentes
+# volumes:
+#   mongo_data:
+#   rabbitmq_data:

@@ -25,8 +25,9 @@ type ReservasService interface {
 	Delete(ctx context.Context, id string) error
 }
 
+// ReservasController maneja las peticiones HTTP para Reservas
 type ReservasController struct {
-	service ReservasService // Inyección de dependencia
+	service ReservasService
 }
 
 // NewReservasController crea una nueva instancia del controller
@@ -45,6 +46,7 @@ func (c *ReservasController) GetReservas(ctx *gin.Context) {
 		})
 		return
 	}
+
 	ctx.JSON(http.StatusOK, gin.H{
 		"reservas": reservas,
 		"count":    len(reservas),
@@ -53,7 +55,6 @@ func (c *ReservasController) GetReservas(ctx *gin.Context) {
 
 // CreateReserva maneja POST /Reservas - Crea un nuevo Reserva
 func (c *ReservasController) CreateReserva(ctx *gin.Context) {
-	// Obtener el Reserva del body JSON
 	var newReserva domain.Reserva
 	if err := ctx.ShouldBindJSON(&newReserva); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{
@@ -71,6 +72,7 @@ func (c *ReservasController) CreateReserva(ctx *gin.Context) {
 		})
 		return
 	}
+
 	ctx.JSON(http.StatusCreated, gin.H{
 		"Reserva": Reserva,
 	})
@@ -78,7 +80,6 @@ func (c *ReservasController) CreateReserva(ctx *gin.Context) {
 
 // GetReservaByID maneja GET /Reservas/:id - Obtiene Reserva por ID
 func (c *ReservasController) GetReservaByID(ctx *gin.Context) {
-	// Obtener el ID del path param
 	id := ctx.Param("id")
 	if id == "" {
 		ctx.JSON(http.StatusBadRequest, gin.H{

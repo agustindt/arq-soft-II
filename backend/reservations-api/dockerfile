@@ -1,5 +1,6 @@
-# Simple Dockerfile for Go microservice
-FROM golang:1.22
+FROM golang:1.23-alpine AS builder
+
+ENV GOTOOLCHAIN=auto
 
 WORKDIR /app
 

@@ -6,7 +6,8 @@ import (
 
 type Reserva struct {
 	ID        string    `json:"id"`
-	UserID    int       `json:"user_id"`
+	UsersID   []int     `json:"users_id"`
+	Cupo      int       `json:"cupo"`
 	Actividad string    `json:"actividad"`
 	Date      time.Time `json:"date"`
 	Status    string    `json:"status"` //Pendiente, confirmada, cancelada

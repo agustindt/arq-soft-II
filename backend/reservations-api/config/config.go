@@ -8,9 +8,10 @@ import (
 )
 
 type Config struct {
-	Port     string
-	Mongo    MongoConfig
-	RabbitMQ RabbitMQConfig
+	Port        string
+	Mongo       MongoConfig
+	RabbitMQ    RabbitMQConfig
+	UsersAPIURL string
 }
 
 type MongoConfig struct {
@@ -32,7 +33,8 @@ func Load() Config {
 	}
 
 	return Config{
-		Port: getEnv("PORT", "8080"),
+		Port:        getEnv("PORT", "8080"),
+		UsersAPIURL: getEnv("USERS_API_URL", "http://localhost:8087"),
 		Mongo: MongoConfig{
 			URI: getEnv("MONGO_URI", "mongodb://localhost:27017"),
 			DB:  getEnv("MONGO_DB", "reservas"),
