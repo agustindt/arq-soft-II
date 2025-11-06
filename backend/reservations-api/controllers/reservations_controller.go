@@ -179,8 +179,6 @@ func (c *ReservasController) DeleteReserva(ctx *gin.Context) {
 	ctx.JSON(http.StatusNoContent, nil)
 }
 
-// 📚 Notas sobre HTTP Status Codes
-//
 // 200 OK - Operación exitosa con contenido
 // 201 Created - Recurso creado exitosamente
 // 204 No Content - Operación exitosa sin contenido (típico para DELETE)
@@ -188,6 +186,3 @@ func (c *ReservasController) DeleteReserva(ctx *gin.Context) {
 // 404 Not Found - Recurso no encontrado
 // 500 Internal Server Error - Error interno del servidor
 // 501 Not Implemented - Funcionalidad no implementada (para TODOs)
-//
-// 💡 Tip: En una API real, sería buena práctica crear una función
-// helper para manejar respuestas de error de manera consistente

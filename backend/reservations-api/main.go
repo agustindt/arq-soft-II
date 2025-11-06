@@ -55,20 +55,22 @@ func main() {
 
 	// Health check endpoint
 	router.GET("/healthz", func(c *gin.Context) {
-		c.JSON(http.StatusOK, gin.H{"status": "ok"})
+		c.JSON(http.StatusOK, gin.H{
+			"status":  "ok",
+			"message": "Users API is running",
+			"service": "users-api",
+		})
 	})
 	usersAPI := cfg.UsersAPIURL
 
 	// Router
 	// GET /Reservas - listar todos los Reservas
 	router.GET("/reservas", ReservaController.GetReservas)
-
 	// POST /Reservas - crear nuevo Reserva
 	router.POST("/reservas", middleware.AdminOnly(usersAPI), ReservaController.CreateReserva)
 
 	// GET /Reservas/:id - obtener Reserva por ID
 	router.GET("/reservas/:id", ReservaController.GetReservaByID)
-
 	// PUT /Reservas/:id - actualizar Reserva existente
 	router.PUT("/reservas/:id", middleware.AdminOnly(usersAPI), ReservaController.UpdateReserva)
 
