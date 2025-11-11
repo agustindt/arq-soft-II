@@ -1,11 +1,11 @@
 package middleware
 
 import (
+	"arq-soft-II/backend/reservations-api/clients"
 	"net/http"
-	"reservations/clients"
 	"strings"
 
-	"reservations/utils"
+	"arq-soft-II/backend/reservations-api/utils"
 
 	"github.com/gin-gonic/gin"
 )

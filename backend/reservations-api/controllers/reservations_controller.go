@@ -1,9 +1,9 @@
 package controllers
 
 import (
+	"arq-soft-II/backend/reservations-api/domain"
 	"context"
 	"net/http"
-	"reservations/domain"
 
 	"github.com/gin-gonic/gin"
 )

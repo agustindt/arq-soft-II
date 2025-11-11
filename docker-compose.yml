@@ -64,7 +64,7 @@ services:
       - SOLR_URL=http://solr:8983/solr
       - SOLR_CORE=activities
       - MEMCACHED_URL=memcached:11211
-      - RABBITMQ_URL=amqp://admin:admin@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://admin:admin123@rabbitmq:5672/
       - ACTIVITIES_API_URL=http://activities-api:8082
     depends_on:
       solr:

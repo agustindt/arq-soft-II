@@ -1,17 +1,17 @@
 package main
 
 import (
+	"arq-soft-II/backend/reservations-api/clients"
+	"arq-soft-II/backend/reservations-api/config"
+	"arq-soft-II/backend/reservations-api/controllers"
+	"arq-soft-II/backend/reservations-api/middleware"
+	"arq-soft-II/backend/reservations-api/repository"
+	"arq-soft-II/backend/reservations-api/services"
 	"context"
 	"log"
 	"net/http"
 	"os"
 	"os/signal"
-	"reservations/clients"
-	"reservations/config"
-	"reservations/controllers"
-	"reservations/middleware"
-	"reservations/repository"
-	"reservations/services"
 	"syscall"
 	"time"
 

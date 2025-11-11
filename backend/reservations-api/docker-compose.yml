@@ -29,8 +29,8 @@ services:
 
   reservations-service:
     build:
-      context: .              # 👈 porque el Dockerfile está en esta misma carpeta
-      dockerfile: ./dockerfile   # 👈 sube un nivel, ya que tu Dockerfile está en backend/
+      context: .
+      dockerfile: ./dockerfile
     container_name: reservations-service
     restart: always
     depends_on:

@@ -1,20 +1,20 @@
-FROM golang:1.23-alpine AS builder
-
-ENV GOTOOLCHAIN=auto
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
-# Copy module files for the reservations service first to leverage Docker cache
-COPY backend/reservations-api/go.mod backend/reservations-api/go.sum ./backend/reservations-api/
-
-# Copy the whole repository into the image under /app
-COPY . /app
-
-# Switch to the service directory, download deps and build
-WORKDIR /app/backend/reservations-api
+COPY ../../go.mod ../../go.sum ./
 RUN go mod download
-RUN go build -o /app/reservations-service .
+
+COPY . .
+
+WORKDIR /app/backend/reservations-api
+RUN CGO_ENABLED=0 GOOS=linux go build -o /main .
+
+FROM alpine:latest
+RUN apk --no-cache add ca-certificates
+WORKDIR /root/
+
+COPY --from=builder /main .
 
 EXPOSE 8080
-
-CMD ["/app/reservations-service"]
+CMD ["./main"]
