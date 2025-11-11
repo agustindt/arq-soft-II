@@ -1,10 +1,10 @@
 package services
 
 import (
+	"arq-soft-II/backend/reservations-api/domain"
 	"context"
 	"errors"
 	"fmt"
-	"reservations/domain"
 	"strings"
 	"sync"
 	"time"

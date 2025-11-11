@@ -4,8 +4,8 @@ import (
 	"net/http"
 	"strings"
 
-	"users-api/config"
-	"users-api/models"
+	"arq-soft-II/backend/users-api/config"
+	"arq-soft-II/backend/users-api/models"
 
 	"github.com/gin-gonic/gin"
 )
@@ -39,10 +39,10 @@ func RequireRole(requiredRole string) gin.HandlerFunc {
 		// Verificar si el usuario tiene el rol requerido
 		if !hasRole(user.Role, requiredRole) {
 			c.JSON(http.StatusForbidden, gin.H{
-				"error":   "Insufficient permissions",
-				"message": "You don't have permission to access this resource",
+				"error":         "Insufficient permissions",
+				"message":       "You don't have permission to access this resource",
 				"required_role": requiredRole,
-				"user_role": user.Role,
+				"user_role":     user.Role,
 			})
 			c.Abort()
 			return
@@ -89,10 +89,10 @@ func RequireAnyRole(roles ...string) gin.HandlerFunc {
 
 		if !hasPermission {
 			c.JSON(http.StatusForbidden, gin.H{
-				"error":   "Insufficient permissions",
-				"message": "You don't have permission to access this resource",
+				"error":         "Insufficient permissions",
+				"message":       "You don't have permission to access this resource",
 				"allowed_roles": roles,
-				"user_role": user.Role,
+				"user_role":     user.Role,
 			})
 			c.Abort()
 			return

@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"users-api/middleware"
-	"users-api/repositories"
-	"users-api/services"
+	"arq-soft-II/backend/users-api/middleware"
+	"arq-soft-II/backend/users-api/repositories"
+	"arq-soft-II/backend/users-api/services"
 
 	"github.com/gin-gonic/gin"
 )

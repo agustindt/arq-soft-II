@@ -26,31 +26,31 @@ services:
       timeout: 5s
       retries: 5
 
-  reservations-service:
-    build: .
-    container_name: reservations-service
-    environment:
-      RABBITMQ_USER: admin
-      RABBITMQ_PASS: admin123
-      RABBITMQ_HOST: rabbitmq  # IMPORTANTE: usar el nombre del servicio, no localhost
-      RABBITMQ_PORT: 5672
-      RABBITMQ_QUEUE_NAME: reservas
-    ports:
-      - "8080:8080"
-    depends_on:
-      mongo:
-        condition: service_started
-      rabbitmq:
-        condition: service_healthy
-      users-api:
-        condition: service_started
-    networks:
-      - app-network
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
+  # reservations-service:
+  #   build: .
+  #   container_name: reservations-service
+  #   environment:
+  #     RABBITMQ_USER: admin
+  #     RABBITMQ_PASS: admin123
+  #     RABBITMQ_HOST: rabbitmq  # IMPORTANTE: usar el nombre del servicio, no localhost
+  #     RABBITMQ_PORT: 5672
+  #     RABBITMQ_QUEUE_NAME: reservas
+  #   ports:
+  #     - "8080:8080"
+  #   depends_on:
+  #     mongo:
+  #       condition: service_started
+  #     rabbitmq:
+  #       condition: service_healthy
+  #     users-api:
+  #       condition: service_started
+  #   networks:
+  #     - app-network
+  #   healthcheck:
+  #     test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
+  #     interval: 10s
+  #     timeout: 5s
+  #     retries: 5
 
   # 🔎 API de Búsqueda (Search API)
   search-api:
@@ -73,7 +73,7 @@ services:
         condition: service_started
       rabbitmq:
         condition: service_healthy
-      activities-api:
+      reservations-service:
         condition: service_started
     networks:
       - app-network
@@ -101,24 +101,27 @@ services:
     networks:
       - app-network
 
-  # 🍃 Base de datos MongoDB para actividades
   mongo:
-    image: mongo:6.0
+    image: mongo:6
+    container_name: mongo
+    restart: always
     ports:
       - "27017:27017"
-    volumes:
-      - mongo_data:/data/db
-      - ./database/mongo/init.js:/docker-entrypoint-initdb.d/init.js
+    environment:
+      MONGO_INITDB_DATABASE: reservasdb
     networks:
       - app-network
+    volumes:
+      - ../mongo_data:/data/db
+      - ./backend/reservations-api/mongo-init:/docker-entrypoint-initdb.d/seed.js
 
-  # 🐇 RabbitMQ (mensajería)
   rabbitmq:
     image: rabbitmq:3-management
     container_name: rabbitmq
+    restart: always
     ports:
-      - "5672:5672"       # Puerto de comunicación
-      - "15672:15672"     # Dashboard web
+      - "5672:5672"
+      - "15672:15672"
     environment:
       RABBITMQ_DEFAULT_USER: admin
       RABBITMQ_DEFAULT_PASS: admin123
@@ -129,6 +132,70 @@ services:
       retries: 3
     networks:
       - app-network
+
+  reservations-service:
+    build:
+      context: .
+      dockerfile: ./backend/reservations-api/dockerfile
+    container_name: reservations-service
+    restart: always
+    depends_on:
+      mongo:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      users-api:
+        condition: service_started
+    environment:
+      PORT: 8080
+      UsersAPIURL: http://localhost:8082
+      MONGO_DB: demo
+      MONGO_COLLECTION: reservas
+      MONGO_URI: mongodb://mongo:27017/reservasdb
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: admin
+      RABBITMQ_PASS: admin123
+      RABBITMQ_QUEUE_NAME: reservas
+      JWT_SECRET: your-super-secret-jwt-key
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # # 🍃 Base de datos MongoDB para actividades
+  # mongo:
+  #   image: mongo:6.0
+  #   ports:
+  #     - "27017:27017"
+  #   volumes:
+  #     - mongo_data:/data/db
+  #     - ./database/mongo/init.js:/docker-entrypoint-initdb.d/init.js
+  #   networks:
+  #     - app-network
+
+  # # 🐇 RabbitMQ (mensajería)
+  # rabbitmq:
+  #   image: rabbitmq:3-management
+  #   container_name: rabbitmq
+  #   ports:
+  #     - "5672:5672"       # Puerto de comunicación
+  #     - "15672:15672"     # Dashboard web
+  #   environment:
+  #     RABBITMQ_DEFAULT_USER: admin
+  #     RABBITMQ_DEFAULT_PASS: admin123
+  #   healthcheck:
+  #     test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+  #     interval: 30s
+  #     timeout: 30s
+  #     retries: 3
+  #   networks:
+  #     - app-network
 
   # 🔆 Solr (motor de búsqueda)
   solr:

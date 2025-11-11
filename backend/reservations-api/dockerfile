@@ -4,12 +4,16 @@ ENV GOTOOLCHAIN=auto
 
 WORKDIR /app
 
-COPY go.mod go.sum ./
+# Copy module files for the reservations service first to leverage Docker cache
+COPY backend/reservations-api/go.mod backend/reservations-api/go.sum ./backend/reservations-api/
+
+# Copy the whole repository into the image under /app
+COPY . /app
+
+# Switch to the service directory, download deps and build
+WORKDIR /app/backend/reservations-api
 RUN go mod download
-
-COPY . .
-
-RUN go build -o reservations-service ./
+RUN go build -o /app/reservations-service .
 
 EXPOSE 8080
 

@@ -1,11 +1,11 @@
 package repository
 
 import (
+	"arq-soft-II/backend/reservations-api/dao"
+	"arq-soft-II/backend/reservations-api/domain"
 	"context"
 	"errors"
 	"log"
-	"reservations/dao"
-	"reservations/domain"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
