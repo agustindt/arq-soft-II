@@ -75,7 +75,13 @@ cd arq-soft-II
 # Switch to develop branch
 git checkout develop
 
-# Start all services
+# Option 1: Use the start-all.sh script (recommended)
+./scripts/start-all.sh
+
+# Option 2: Use Makefile
+make start
+
+# Option 3: Use docker-compose directly
 docker-compose up --build
 ```
 
@@ -260,6 +266,42 @@ git commit -m "test: add unit tests for auth service"
 
 ## 🔧 Development
 
+### Makefile Commands
+
+We provide a comprehensive Makefile for common operations:
+
+```bash
+# Show all available commands
+make help
+
+# Main Commands
+make start          # Start all services using start-all.sh
+make stop           # Stop all services
+make restart        # Restart all services
+make build          # Build all Docker images
+make logs           # Show logs from all services
+make test           # Run all tests (test-all.sh)
+make test-infra     # Run infrastructure tests only
+make test-backend   # Run backend tests only
+make seed           # Load seed data into databases
+make clean          # Stop and remove containers, networks, volumes
+
+# Service Management
+make up             # Start services in detached mode
+make down           # Stop and remove containers
+make ps             # Show running containers
+make logs-api       # Show logs from API services
+make logs-db        # Show logs from database services
+
+# Database Access
+make db-mysql       # Connect to MySQL shell
+make db-mongo       # Connect to MongoDB shell
+
+# Development
+make rebuild        # Rebuild all images without cache
+make shell-api      # Open shell in users-api container
+```
+
 ### Local Development Setup
 
 #### Frontend Development
@@ -324,13 +366,49 @@ docker-compose exec mongodb mongosh activities_db
 
 ### Testing
 
+We provide comprehensive test scripts to verify the entire stack:
+
 ```bash
-# Test all services are running
-curl http://localhost:3000      # Frontend
-curl http://localhost:8081/api/v1/health  # Users API
-curl http://localhost:8082/health         # Activities API  
-curl http://localhost:8083/health         # Search API
+# Run all tests (infrastructure + backend + frontend + E2E)
+./scripts/test-all.sh
+# or
+make test
+
+# Run specific test suites
+./scripts/test-infrastructure.sh  # Test databases, RabbitMQ, Solr, Memcached
+# or
+make test-infra
+
+./scripts/test-backend.sh          # Test all backend APIs
+# or
+make test-backend
+
+# Manual health checks
+curl http://localhost:3000         # Frontend
+curl http://localhost:8081/health   # Users API
+curl http://localhost:8082/healthz  # Activities API  
+curl http://localhost:8083/health   # Search API
+curl http://localhost:8080/health   # Reservations API
 ```
+
+For detailed testing documentation, see [TESTING.md](./TESTING.md).
+
+### Seed Data
+
+Load sample data for development and testing:
+
+```bash
+# Load seed data into MySQL and MongoDB
+./scripts/seed-data.sh
+# or
+make seed
+```
+
+This will populate:
+- **MySQL**: Test users (normal and admin roles)
+- **MongoDB**: Sample activities and reservations
+
+See `database/mysql/seed.sql` and `database/mongo/seed.js` for details.
 
 ## 📡 API Endpoints
 

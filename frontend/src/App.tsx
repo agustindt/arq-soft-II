@@ -15,6 +15,11 @@ import Dashboard from "./components/Dashboard/Dashboard";
 import Profile from "./components/Profile/Profile";
 import ExtendedProfile from "./components/ExtendedProfile/ExtendedProfile";
 import Navbar from "./components/Navbar/Navbar";
+import { ActivitiesList } from "./components/Home";
+import { ActivityDetails } from "./components/ActivityDetails";
+import { SearchPage } from "./components/Search";
+import { MyReservations } from "./components/MyActivities";
+import { AdminDashboard, ActivityManagement, CreateActivity } from "./components/Admin";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 // Tema personalizado para la app
@@ -110,12 +115,76 @@ function AppContent(): JSX.Element {
               </ProtectedRoute>
             }
           />
+          <Route
+            path="/activities"
+            element={
+              <ProtectedRoute>
+                <ActivitiesList />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/activities/:id"
+            element={
+              <ProtectedRoute>
+                <ActivityDetails />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/search"
+            element={
+              <ProtectedRoute>
+                <SearchPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/my-activities"
+            element={
+              <ProtectedRoute>
+                <MyReservations />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/activities"
+            element={
+              <ProtectedRoute>
+                <ActivityManagement />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/activities/new"
+            element={
+              <ProtectedRoute>
+                <CreateActivity />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/activities/:id/edit"
+            element={
+              <ProtectedRoute>
+                <CreateActivity />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Redirecciones */}
           <Route
             path="/"
             element={
-              <Navigate to={isAuthenticated ? "/dashboard" : "/login"} />
+              <Navigate to={isAuthenticated ? "/activities" : "/login"} />
             }
           />
           <Route path="*" element={<Navigate to="/" />} />

@@ -17,6 +17,10 @@ import {
   Dashboard as DashboardIcon,
   Logout as LogoutIcon,
   Person as PersonIcon,
+  DirectionsRun as ActivitiesIcon,
+  Search as SearchIcon,
+  BookOnline as BookIcon,
+  AdminPanelSettings as AdminIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -59,13 +63,67 @@ function Navbar(): JSX.Element {
             display: "flex",
             alignItems: "center",
           }}
-          onClick={() => navigate("/dashboard")}
+          onClick={() => navigate("/activities")}
         >
           🏃‍♀️ Sports Activities
         </Typography>
 
         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
           {/* Navigation Buttons */}
+          <Button
+            color="inherit"
+            startIcon={<ActivitiesIcon />}
+            onClick={() => navigate("/activities")}
+            sx={{
+              backgroundColor:
+                location.pathname === "/activities"
+                  ? "rgba(255,255,255,0.1)"
+                  : "transparent",
+            }}
+          >
+            Activities
+          </Button>
+          <Button
+            color="inherit"
+            startIcon={<SearchIcon />}
+            onClick={() => navigate("/search")}
+            sx={{
+              backgroundColor:
+                location.pathname === "/search"
+                  ? "rgba(255,255,255,0.1)"
+                  : "transparent",
+            }}
+          >
+            Search
+          </Button>
+          <Button
+            color="inherit"
+            startIcon={<BookIcon />}
+            onClick={() => navigate("/my-activities")}
+            sx={{
+              backgroundColor:
+                location.pathname === "/my-activities"
+                  ? "rgba(255,255,255,0.1)"
+                  : "transparent",
+            }}
+          >
+            My Activities
+          </Button>
+          {user?.role === "admin" && (
+            <Button
+              color="inherit"
+              startIcon={<AdminIcon />}
+              onClick={() => navigate("/admin")}
+              sx={{
+                backgroundColor:
+                  location.pathname.startsWith("/admin")
+                    ? "rgba(255,255,255,0.1)"
+                    : "transparent",
+              }}
+            >
+              Admin
+            </Button>
+          )}
           <Button
             color="inherit"
             startIcon={<DashboardIcon />}

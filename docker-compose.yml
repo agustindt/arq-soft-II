@@ -14,43 +14,53 @@ services:
       - DB_USER=root
       - DB_PASSWORD=rootpassword
       - DB_NAME=users_db
-      - JWT_SECRET=your-super-secret-jwt-key-here
+      - JWT_SECRET=z25yYAswKLAbrMWDVGg4HZuVS661GpqDgxR1B3hCcjDBvNffYfSxErxgiLVXAQoi5b9+6AVQZxcW9hW9QlFDDA==
     depends_on:
       mysql:
         condition: service_healthy
     networks:
       - app-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8081/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8081/api/v1/health"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  # reservations-service:
-  #   build: .
-  #   container_name: reservations-service
-  #   environment:
-  #     RABBITMQ_USER: admin
-  #     RABBITMQ_PASS: admin123
-  #     RABBITMQ_HOST: rabbitmq  # IMPORTANTE: usar el nombre del servicio, no localhost
-  #     RABBITMQ_PORT: 5672
-  #     RABBITMQ_QUEUE_NAME: reservas
-  #   ports:
-  #     - "8080:8080"
-  #   depends_on:
-  #     mongo:
-  #       condition: service_started
-  #     rabbitmq:
-  #       condition: service_healthy
-  #     users-api:
-  #       condition: service_started
-  #   networks:
-  #     - app-network
-  #   healthcheck:
-  #     test: ["CMD", "curl", "-f", "http://localhost:8082/health"]
-  #     interval: 10s
-  #     timeout: 5s
-  #     retries: 5
+  # 🏃 API de Actividades
+  activities-api:
+    build:
+      context: .
+      dockerfile: ./backend/activities-api/Dockerfile
+    container_name: activities-api
+    restart: always
+    ports:
+      - "8082:8082"
+    environment:
+      - PORT=8082
+      - MONGO_URI=mongodb://mongo:27017
+      - MONGO_DB=activitiesdb
+      - MONGO_COLLECTION=activities
+      - RABBITMQ_USER=admin
+      - RABBITMQ_PASS=admin123
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_EXCHANGE=entity.events
+      - USERS_API_URL=http://users-api:8081
+      - JWT_SECRET=z25yYAswKLAbrMWDVGg4HZuVS661GpqDgxR1B3hCcjDBvNffYfSxErxgiLVXAQoi5b9+6AVQZxcW9hW9QlFDDA==
+    depends_on:
+      mongo:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      users-api:
+        condition: service_started
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8082/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   # 🔎 API de Búsqueda (Search API)
   search-api:
@@ -73,7 +83,7 @@ services:
         condition: service_started
       rabbitmq:
         condition: service_healthy
-      reservations-service:
+      activities-api:
         condition: service_started
     networks:
       - app-network
@@ -112,8 +122,8 @@ services:
     networks:
       - app-network
     volumes:
-      - ../mongo_data:/data/db
-      - ./backend/reservations-api/mongo-init:/docker-entrypoint-initdb.d/seed.js
+      - mongo_data:/data/db
+      - ./database/mongo/init.js:/docker-entrypoint-initdb.d/init.js
 
   rabbitmq:
     image: rabbitmq:3-management
@@ -148,7 +158,7 @@ services:
         condition: service_started
     environment:
       PORT: 8080
-      UsersAPIURL: http://localhost:8082
+      USERS_API_URL: http://users-api:8081
       MONGO_DB: demo
       MONGO_COLLECTION: reservas
       MONGO_URI: mongodb://mongo:27017/reservasdb
@@ -157,16 +167,42 @@ services:
       RABBITMQ_USER: admin
       RABBITMQ_PASS: admin123
       RABBITMQ_QUEUE_NAME: reservas
-      JWT_SECRET: your-super-secret-jwt-key
+      JWT_SECRET: z25yYAswKLAbrMWDVGg4HZuVS661GpqDgxR1B3hCcjDBvNffYfSxErxgiLVXAQoi5b9+6AVQZxcW9hW9QlFDDA==
     ports:
       - "8080:8080"
     networks:
       - app-network
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # ⚛️ Frontend React
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_USERS_API_URL=http://localhost:8081
+      - REACT_APP_ACTIVITIES_API_URL=http://localhost:8082
+      - REACT_APP_SEARCH_API_URL=http://localhost:8083
+      - REACT_APP_RESERVATIONS_API_URL=http://localhost:8080
+    depends_on:
+      users-api:
+        condition: service_healthy
+      activities-api:
+        condition: service_healthy
+      search-api:
+        condition: service_healthy
+      reservations-service:
+        condition: service_healthy
+    networks:
+      - app-network
 
   # # 🍃 Base de datos MongoDB para actividades
   # mongo:

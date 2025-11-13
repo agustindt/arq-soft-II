@@ -2,6 +2,8 @@
 <schema name="activities" version="1.6">
   <!-- Campos -->
   <fields>
+    <!-- Campo _version_ requerido por Solr 9.4 para control de versiones -->
+    <field name="_version_" type="plong" indexed="true" stored="true" docValues="true" multiValued="false" />
     <field name="id" type="string" indexed="true" stored="true" required="true" />
     <field name="name" type="text_general" indexed="true" stored="true" />
     <field name="description" type="text_general" indexed="true" stored="true" />
@@ -24,6 +26,7 @@
   <!-- Tipos de datos -->
   <types>
     <fieldType name="string" class="solr.StrField" sortMissingLast="true"/>
+    <fieldType name="plong" class="solr.LongPointField" docValues="true"/>
     <fieldType name="float" class="solr.FloatPointField"/>
     <fieldType name="date" class="solr.DatePointField"/>
     <fieldType name="text_general" class="solr.TextField" positionIncrementGap="100">

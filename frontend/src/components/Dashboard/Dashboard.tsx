@@ -26,14 +26,19 @@ import {
 } from "@mui/icons-material";
 import { useAuth } from "../../contexts/AuthContext";
 import { userService, authService } from "../../services/authService";
-import { DashboardStats, ApiStatus, User } from "../../types";
+import { activitiesService } from "../../services/activitiesService";
+import { DashboardStats, ApiStatus, User, Activity } from "../../types";
+import { useNavigate } from "react-router-dom";
 
 function Dashboard(): JSX.Element {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [stats, setStats] = useState<DashboardStats>({
     totalUsers: 0,
     recentUsers: [],
   });
+  const [activities, setActivities] = useState<Activity[]>([]);
+  const [totalActivities, setTotalActivities] = useState<number>(0);
   const [apiStatus, setApiStatus] = useState<ApiStatus | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
@@ -44,13 +49,23 @@ function Dashboard(): JSX.Element {
   const loadDashboardData = async (): Promise<void> => {
     setLoading(true);
     try {
-      // Cargar estadísticas
+      // Cargar estadísticas de usuarios
       const usersResponse = await userService.getUsers(1, 5);
 
       setStats({
         totalUsers: usersResponse.data.pagination.total,
         recentUsers: usersResponse.data.users,
       });
+
+      // Cargar actividades
+      try {
+        const activitiesResponse = await activitiesService.getActivities();
+        setActivities(activitiesResponse.activities.slice(0, 3)); // Mostrar solo las primeras 3
+        setTotalActivities(activitiesResponse.count);
+      } catch (activitiesError) {
+        console.error("Error loading activities:", activitiesError);
+        // No fallar si las actividades no se pueden cargar
+      }
 
       // Verificar estado de la API
       const healthResponse = await authService.healthCheck();
@@ -167,9 +182,9 @@ function Dashboard(): JSX.Element {
               <Box sx={{ display: "flex", alignItems: "center" }}>
                 <ActivityIcon sx={{ mr: 2, color: "secondary.main" }} />
                 <Box>
-                  <Typography variant="h4">0</Typography>
+                  <Typography variant="h4">{totalActivities}</Typography>
                   <Typography variant="body2" color="textSecondary">
-                    Activities (Coming Soon)
+                    Total Activities
                   </Typography>
                 </Box>
               </Box>
@@ -189,21 +204,139 @@ function Dashboard(): JSX.Element {
                 fullWidth
                 variant="outlined"
                 sx={{ mb: 1 }}
-                onClick={() => (window.location.href = "/profile")}
+                onClick={() => navigate("/profile")}
               >
                 Edit Profile
               </Button>
 
-              <Button fullWidth variant="outlined" disabled sx={{ mb: 1 }}>
-                Create Activity (Soon)
+              <Button
+                fullWidth
+                variant="contained"
+                sx={{ mb: 1 }}
+                onClick={() => navigate("/activities")}
+              >
+                Browse Activities
               </Button>
 
-              <Button fullWidth variant="outlined" disabled>
-                View Analytics (Soon)
+              <Button
+                fullWidth
+                variant="outlined"
+                sx={{ mb: 1 }}
+                onClick={() => navigate("/search")}
+              >
+                Search Activities
               </Button>
+
+              <Button
+                fullWidth
+                variant="outlined"
+                onClick={() => navigate("/my-activities")}
+              >
+                My Reservations
+              </Button>
+
+              {user?.role === "admin" && (
+                <Button
+                  fullWidth
+                  variant="contained"
+                  color="secondary"
+                  sx={{ mt: 1 }}
+                  onClick={() => navigate("/admin")}
+                >
+                  Admin Panel
+                </Button>
+              )}
             </CardContent>
           </Card>
         </Grid>
+
+        {/* Featured Activities */}
+        {activities.length > 0 && (
+          <Grid item xs={12}>
+            <Card>
+              <CardContent>
+                <Box
+                  sx={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    mb: 2,
+                  }}
+                >
+                  <Typography variant="h6">Featured Activities</Typography>
+                  <Button
+                    size="small"
+                    onClick={() => navigate("/activities")}
+                  >
+                    View All
+                  </Button>
+                </Box>
+
+                <Grid container spacing={2}>
+                  {activities.map((activity) => (
+                    <Grid item xs={12} sm={6} md={4} key={activity.id}>
+                      <Card
+                        sx={{
+                          cursor: "pointer",
+                          transition: "transform 0.2s",
+                          "&:hover": {
+                            transform: "translateY(-2px)",
+                            boxShadow: 3,
+                          },
+                        }}
+                        onClick={() => navigate(`/activities/${activity.id}`)}
+                      >
+                        <CardContent>
+                          <Typography variant="h6" noWrap>
+                            {activity.name}
+                          </Typography>
+                          <Typography
+                            variant="body2"
+                            color="textSecondary"
+                            sx={{
+                              mb: 1,
+                              display: "-webkit-box",
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: "vertical",
+                              overflow: "hidden",
+                            }}
+                          >
+                            {activity.description}
+                          </Typography>
+                          <Box sx={{ display: "flex", gap: 1, flexWrap: "wrap" }}>
+                            <Chip
+                              label={activity.category}
+                              size="small"
+                              color="primary"
+                            />
+                            <Chip
+                              label={activity.difficulty}
+                              size="small"
+                              color={
+                                activity.difficulty === "beginner"
+                                  ? "success"
+                                  : activity.difficulty === "intermediate"
+                                  ? "warning"
+                                  : "error"
+                              }
+                            />
+                          </Box>
+                          <Typography
+                            variant="h6"
+                            color="primary"
+                            sx={{ mt: 1 }}
+                          >
+                            ${activity.price.toFixed(2)}
+                          </Typography>
+                        </CardContent>
+                      </Card>
+                    </Grid>
+                  ))}
+                </Grid>
+              </CardContent>
+            </Card>
+          </Grid>
+        )}
 
         {/* Recent Users */}
         <Grid item xs={12}>

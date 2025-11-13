@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 
+	"arq-soft-II/backend/search-api/clients"
 	"arq-soft-II/backend/search-api/config"
 	"arq-soft-II/backend/search-api/controllers"
 	"arq-soft-II/backend/search-api/services"
@@ -32,8 +33,27 @@ func main() {
 	}
 	defer log.Println("✅ Conexión Memcached cerrada.")
 
-	// 🔹 Crear service y controller
-	service := services.NewSearchService(memc)
+	// 🔹 Conectarse a Solr
+	solrURL := os.Getenv("SOLR_URL")
+	if solrURL == "" {
+		solrURL = "http://solr:8983/solr"
+	}
+	solrCore := os.Getenv("SOLR_CORE")
+	if solrCore == "" {
+		solrCore = "activities"
+	}
+
+	solrClient := clients.NewSolrClient(solrURL, solrCore)
+
+	// Health check de Solr
+	if err := solrClient.HealthCheck(); err != nil {
+		log.Printf("⚠️  Warning: Solr health check failed: %v", err)
+	} else {
+		log.Printf("✅ Conexión con Solr OK: %s/%s", solrURL, solrCore)
+	}
+
+	// 🔹 Crear service y controller con Solr
+	service := services.NewSearchService(memc, solrClient)
 	controller := controllers.NewSearchController(service)
 
 	// 🔹 Conectarse a RabbitMQ
