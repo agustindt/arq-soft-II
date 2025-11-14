@@ -88,6 +88,12 @@ export const reservationsService = {
   async deleteReservation(id: string): Promise<void> {
     await reservationsApi.delete(`/reservas/${id}`);
   },
+
+  // Health check
+  async healthCheck(): Promise<{ status: string; message: string; service: string }> {
+    const response = await reservationsApi.get<{ status: string; message: string; service: string }>("/healthz");
+    return response.data;
+  },
 };
 
 export default reservationsService;

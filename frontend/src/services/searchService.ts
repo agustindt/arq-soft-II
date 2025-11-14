@@ -92,6 +92,12 @@ export const searchService = {
   getDifficulties(): string[] {
     return ["beginner", "intermediate", "advanced"];
   },
+
+  // Health check
+  async healthCheck(): Promise<string> {
+    const response = await searchApi.get<string>("/health");
+    return response.data;
+  },
 };
 
 export default searchService;

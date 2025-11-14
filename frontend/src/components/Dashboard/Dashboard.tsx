@@ -68,11 +68,11 @@ function Dashboard(): JSX.Element {
         // No fallar si las actividades no se pueden cargar
       }
 
-      // Verificar estado de la API
+      // Verificar estado de la API (Users API para Dashboard)
       const healthResponse = await authService.healthCheck();
       setApiStatus({
         status: "online",
-        message: healthResponse.message,
+        message: `Users API: ${healthResponse.message}`,
       });
     } catch (error: any) {
       console.error("Error loading dashboard data:", error);

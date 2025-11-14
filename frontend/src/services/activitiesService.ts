@@ -101,6 +101,12 @@ export const activitiesService = {
     );
     return response.data;
   },
+
+  // Health check
+  async healthCheck(): Promise<{ status: string; service: string }> {
+    const response = await activitiesApi.get<{ status: string; service: string }>("/healthz");
+    return response.data;
+  },
 };
 
 export default activitiesService;

@@ -21,10 +21,12 @@ import {
 } from "@mui/icons-material";
 import { activitiesService } from "../../services/activitiesService";
 import { useAuth } from "../../contexts/AuthContext";
+import { useApiStatus } from "../../hooks/useApiStatus";
 
 function AdminDashboard(): JSX.Element {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const apiStatus = useApiStatus(() => activitiesService.healthCheck(), "Activities API");
   const [stats, setStats] = useState({
     totalActivities: 0,
     activeActivities: 0,
@@ -89,6 +91,16 @@ function AdminDashboard(): JSX.Element {
       <Typography variant="subtitle1" color="textSecondary" gutterBottom sx={{ mb: 3 }}>
         Manage activities, reservations, and platform settings
       </Typography>
+
+      {/* API Status */}
+      {apiStatus && (
+        <Alert
+          severity={apiStatus.status === "online" ? "success" : "error"}
+          sx={{ mb: 3 }}
+        >
+          API Status: {apiStatus.message}
+        </Alert>
+      )}
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>

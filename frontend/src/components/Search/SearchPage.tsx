@@ -33,9 +33,11 @@ import {
 } from "@mui/icons-material";
 import { searchService } from "../../services/searchService";
 import { Activity, SearchFilters } from "../../types";
+import { useApiStatus } from "../../hooks/useApiStatus";
 
 function SearchPage(): JSX.Element {
   const navigate = useNavigate();
+  const apiStatus = useApiStatus(() => searchService.healthCheck(), "Search API");
   const [searchParams, setSearchParams] = useSearchParams();
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState<boolean>(false);
@@ -147,6 +149,16 @@ function SearchPage(): JSX.Element {
       <Typography variant="subtitle1" color="textSecondary" gutterBottom sx={{ mb: 3 }}>
         Find the perfect activity for you
       </Typography>
+
+      {/* API Status */}
+      {apiStatus && (
+        <Alert
+          severity={apiStatus.status === "online" ? "success" : "error"}
+          sx={{ mb: 3 }}
+        >
+          API Status: {apiStatus.message}
+        </Alert>
+      )}
 
       <Grid container spacing={3}>
         {/* Filters Sidebar */}

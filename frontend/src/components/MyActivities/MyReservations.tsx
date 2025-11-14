@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import {
   Box,
@@ -38,6 +38,7 @@ import { activitiesService } from "../../services/activitiesService";
 import { formatDateTime } from "../../utils/dateUtils";
 import { Reservation, Activity } from "../../types";
 import { useAuth } from "../../contexts/AuthContext";
+import { useApiStatus } from "../../hooks/useApiStatus";
 
 interface ReservationWithActivity extends Reservation {
   activity?: Activity;
@@ -46,6 +47,8 @@ interface ReservationWithActivity extends Reservation {
 function MyReservations(): JSX.Element {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const healthCheckFn = useCallback(() => reservationsService.healthCheck(), []);
+  const apiStatus = useApiStatus(healthCheckFn, "Reservations API");
   const [reservations, setReservations] = useState<ReservationWithActivity[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -136,6 +139,16 @@ function MyReservations(): JSX.Element {
       <Typography variant="subtitle1" color="textSecondary" gutterBottom sx={{ mb: 3 }}>
         Manage your activity reservations
       </Typography>
+
+      {/* API Status */}
+      {apiStatus && (
+        <Alert
+          severity={apiStatus.status === "online" ? "success" : "error"}
+          sx={{ mb: 3 }}
+        >
+          API Status: {apiStatus.message}
+        </Alert>
+      )}
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>

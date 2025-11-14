@@ -30,6 +30,8 @@ import {
   UpdateProfileRequest,
   ChangePasswordRequest,
 } from "../../types";
+import { useApiStatus } from "../../hooks/useApiStatus";
+import { authService } from "../../services/authService";
 
 interface PasswordFormData extends ChangePasswordRequest {
   confirmPassword: string;
@@ -37,6 +39,7 @@ interface PasswordFormData extends ChangePasswordRequest {
 
 function Profile(): JSX.Element {
   const { user, updateProfile, changePassword } = useAuth();
+  const apiStatus = useApiStatus(() => authService.healthCheck(), "Users API");
   const [editMode, setEditMode] = useState<boolean>(false);
   const [passwordDialogOpen, setPasswordDialogOpen] = useState<boolean>(false);
   const [loading, setLoading] = useState<boolean>(false);
@@ -191,6 +194,16 @@ function Profile(): JSX.Element {
           Manage your personal information and account settings
         </Typography>
       </Box>
+
+      {/* API Status */}
+      {apiStatus && (
+        <Alert
+          severity={apiStatus.status === "online" ? "success" : "error"}
+          sx={{ mb: 3 }}
+        >
+          API Status: {apiStatus.message}
+        </Alert>
+      )}
 
       {message.text && (
         <Alert

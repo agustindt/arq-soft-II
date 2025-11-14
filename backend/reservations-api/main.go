@@ -57,8 +57,8 @@ func main() {
 	router.GET("/healthz", func(c *gin.Context) {
 		c.JSON(http.StatusOK, gin.H{
 			"status":  "ok",
-			"message": "Users API is running",
-			"service": "users-api",
+			"message": "Reservations API is running",
+			"service": "reservations-api",
 		})
 	})
 	usersAPI := cfg.UsersAPIURL

@@ -40,11 +40,13 @@ import { activitiesService } from "../../services/activitiesService";
 import { reservationsService } from "../../services/reservationsService";
 import { Activity } from "../../types";
 import { useAuth } from "../../contexts/AuthContext";
+import { useApiStatus } from "../../hooks/useApiStatus";
 
 function ActivityDetails(): JSX.Element {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const apiStatus = useApiStatus(() => activitiesService.healthCheck(), "Activities API");
   const [activity, setActivity] = useState<Activity | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -178,6 +180,16 @@ function ActivityDetails(): JSX.Element {
       >
         Back
       </Button>
+
+      {/* API Status */}
+      {apiStatus && (
+        <Alert
+          severity={apiStatus.status === "online" ? "success" : "error"}
+          sx={{ mb: 3 }}
+        >
+          API Status: {apiStatus.message}
+        </Alert>
+      )}
 
       <Grid container spacing={3}>
         {/* Main Content */}

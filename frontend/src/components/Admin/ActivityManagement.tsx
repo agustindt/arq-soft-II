@@ -32,10 +32,12 @@ import {
 import { activitiesService } from "../../services/activitiesService";
 import { Activity } from "../../types";
 import { useAuth } from "../../contexts/AuthContext";
+import { useApiStatus } from "../../hooks/useApiStatus";
 
 function ActivityManagement(): JSX.Element {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const apiStatus = useApiStatus(() => activitiesService.healthCheck(), "Activities API");
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -140,6 +142,16 @@ function ActivityManagement(): JSX.Element {
           Create Activity
         </Button>
       </Box>
+
+      {/* API Status */}
+      {apiStatus && (
+        <Alert
+          severity={apiStatus.status === "online" ? "success" : "error"}
+          sx={{ mb: 3 }}
+        >
+          API Status: {apiStatus.message}
+        </Alert>
+      )}
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>

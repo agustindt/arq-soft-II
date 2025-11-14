@@ -31,9 +31,11 @@ import {
 } from "@mui/icons-material";
 import { activitiesService } from "../../services/activitiesService";
 import { Activity, ActivityCategory, DifficultyLevel } from "../../types";
+import { useApiStatus } from "../../hooks/useApiStatus";
 
 function ActivitiesList(): JSX.Element {
   const navigate = useNavigate();
+  const apiStatus = useApiStatus(() => activitiesService.healthCheck(), "Activities API");
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
@@ -159,6 +161,16 @@ function ActivitiesList(): JSX.Element {
           Discover and join amazing sports activities in your area
         </Typography>
       </Box>
+
+      {/* API Status */}
+      {apiStatus && (
+        <Alert
+          severity={apiStatus.status === "online" ? "success" : "error"}
+          sx={{ mb: 3 }}
+        >
+          API Status: {apiStatus.message}
+        </Alert>
+      )}
 
       {/* Search and Filters */}
       <Paper

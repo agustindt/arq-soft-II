@@ -25,11 +25,13 @@ import {
 import { activitiesService } from "../../services/activitiesService";
 import { Activity, ACTIVITY_CATEGORIES, DIFFICULTY_LEVELS } from "../../types";
 import { useAuth } from "../../contexts/AuthContext";
+import { useApiStatus } from "../../hooks/useApiStatus";
 
 function CreateActivity(): JSX.Element {
   const navigate = useNavigate();
   const { id } = useParams<{ id: string }>();
   const { user } = useAuth();
+  const apiStatus = useApiStatus(() => activitiesService.healthCheck(), "Activities API");
   const isEditMode = !!id;
 
   const [loading, setLoading] = useState<boolean>(false);
@@ -183,6 +185,16 @@ function CreateActivity(): JSX.Element {
       <Typography variant="h4" gutterBottom>
         {isEditMode ? "Edit Activity" : "Create New Activity"}
       </Typography>
+
+      {/* API Status */}
+      {apiStatus && (
+        <Alert
+          severity={apiStatus.status === "online" ? "success" : "error"}
+          sx={{ mb: 3 }}
+        >
+          API Status: {apiStatus.message}
+        </Alert>
+      )}
 
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
