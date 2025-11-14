@@ -76,6 +76,35 @@ func (r *MongoReservasRepository) List(ctx context.Context) ([]domain.Reserva, e
 	return domainReservas, nil
 }
 
+// ListByUserID obtiene todas las reservas de un usuario específico
+func (r *MongoReservasRepository) ListByUserID(ctx context.Context, userID int) ([]domain.Reserva, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	// Filtrar por user_id - buscar documentos donde users_id contenga el userID
+	filter := bson.M{
+		"users_id": bson.M{"$in": []int{userID}},
+	}
+
+	cur, err := r.col.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cur.Close(ctx)
+
+	var daoReservas []dao.Reserva
+	if err := cur.All(ctx, &daoReservas); err != nil {
+		return nil, err
+	}
+
+	domainReservas := make([]domain.Reserva, len(daoReservas))
+	for i, daoReserva := range daoReservas {
+		domainReservas[i] = daoReserva.ToDomain()
+	}
+
+	return domainReservas, nil
+}
+
 // Create inserta un nuevo Reserva en DB
 func (r *MongoReservasRepository) Create(ctx context.Context, Reserva domain.Reserva) (domain.Reserva, error) {
 	ReservaDAO := dao.FromDomain(Reserva) // Convertir a modelo DAO

@@ -87,7 +87,13 @@ The service uses MongoDB to store reservations. Each reservation document follow
 
 #### GET /reservas
 
-List all reservations.
+List reservations.
+
+**Authentication:** Required (JWT token in Authorization header)
+
+**Authorization:**
+- Regular users see only their own reservations
+- Admins see all reservations
 
 **Response (200 OK):**
 ```json
@@ -122,6 +128,8 @@ List all reservations.
 #### GET /reservas/:id
 
 Get a specific reservation by ID.
+
+**Authentication:** Not required (public endpoint)
 
 **Parameters:**
 - `id` (path parameter) - MongoDB ObjectID
@@ -340,13 +348,15 @@ The Reservations API validates JWT tokens issued by the Users API. The JWT must 
 
 | Endpoint | Public | User | Admin |
 |----------|--------|------|-------|
-| GET /reservas | ✅ | ✅ | ✅ |
+| GET /reservas | ❌ | ✅ (own only) | ✅ (all) |
 | GET /reservas/:id | ✅ | ✅ | ✅ |
 | POST /reservas | ❌ | ✅ | ✅ |
 | PUT /reservas/:id | ❌ | ❌ | ✅ |
 | DELETE /reservas/:id | ❌ | ✅ (own) | ✅ (any) |
 
-**Note:** Users can only delete their own reservations. Admins can delete any reservation.
+**Notes:**
+- `GET /reservas`: Regular users see only their own reservations. Admins see all reservations.
+- `DELETE /reservas/:id`: Users can only delete their own reservations. Admins can delete any reservation.
 
 ### Admin Middleware
 

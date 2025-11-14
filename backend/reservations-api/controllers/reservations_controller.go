@@ -13,6 +13,9 @@ type ReservasService interface {
 	// List retorna todos los Reservas (sin filtros por ahora)
 	List(ctx context.Context) ([]domain.Reserva, error)
 
+	// ListByUserID retorna las reservas de un usuario específico
+	ListByUserID(ctx context.Context, userID int) ([]domain.Reserva, error)
+
 	// Create valida y crea un nuevo Reserva
 	Create(ctx context.Context, reserva domain.Reserva) (domain.Reserva, error)
 
@@ -39,7 +42,43 @@ func NewReservasController(reservasService ReservasService) *ReservasController 
 }
 
 func (c *ReservasController) GetReservas(ctx *gin.Context) {
-	reservas, err := c.service.List(ctx.Request.Context())
+	// Obtener información del usuario del contexto (seteada por AuthRequired middleware)
+	userID, existsUserID := ctx.Get("user_id")
+	userRole, existsUserRole := ctx.Get("user_role")
+
+	if !existsUserID {
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"error": "User ID not found in context",
+		})
+		return
+	}
+
+	var reservas []domain.Reserva
+	var err error
+
+	// Verificar si es admin
+	isAdmin := false
+	if existsUserRole {
+		if role, ok := userRole.(string); ok {
+			isAdmin = role == "admin" || role == "super_admin" || role == "root"
+		}
+	}
+
+	// Si es admin, retornar todas las reservas
+	if isAdmin {
+		reservas, err = c.service.List(ctx.Request.Context())
+	} else {
+		// Si es usuario normal, retornar solo sus reservas
+		if uid, ok := userID.(uint); ok {
+			reservas, err = c.service.ListByUserID(ctx.Request.Context(), int(uid))
+		} else {
+			ctx.JSON(http.StatusInternalServerError, gin.H{
+				"error": "Invalid user ID format",
+			})
+			return
+		}
+	}
+
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to fetch Reservas",

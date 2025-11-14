@@ -14,6 +14,9 @@ type ReservasRepository interface {
 	// List retorna todos los Reservas de la base de datos
 	List(ctx context.Context) ([]domain.Reserva, error)
 
+	// ListByUserID retorna las reservas de un usuario específico
+	ListByUserID(ctx context.Context, userID int) ([]domain.Reserva, error)
+
 	// Create inserta un nuevo Reserva en DB
 	Create(ctx context.Context, Reserva domain.Reserva) (domain.Reserva, error)
 
@@ -43,9 +46,14 @@ func NewReservasService(repository ReservasRepository, publisher ReservaPublishe
 	}
 }
 
-// List obtiene todos los Reservas
+// List obtiene todos los Reservas (solo para admin)
 func (s *ReservasServiceImpl) List(ctx context.Context) ([]domain.Reserva, error) {
 	return s.repository.List(ctx)
+}
+
+// ListByUserID obtiene las reservas de un usuario específico
+func (s *ReservasServiceImpl) ListByUserID(ctx context.Context, userID int) ([]domain.Reserva, error) {
+	return s.repository.ListByUserID(ctx, userID)
 }
 
 // Create valida y crea un nuevo Reserva

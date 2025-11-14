@@ -90,8 +90,8 @@ func main() {
 	usersAPI := cfg.UsersAPIURL
 
 	// Router
-	// GET /Reservas - listar todos los Reservas
-	router.GET("/reservas", ReservaController.GetReservas)
+	// GET /Reservas - listar reservas (usuarios autenticados ven solo las suyas, admins ven todas)
+	router.GET("/reservas", middleware.AuthRequired(usersAPI), ReservaController.GetReservas)
 	// POST /Reservas - crear nuevo Reserva (cualquier usuario autenticado)
 	router.POST("/reservas", middleware.AuthRequired(usersAPI), ReservaController.CreateReserva)
 
