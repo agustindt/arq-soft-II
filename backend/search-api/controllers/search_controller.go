@@ -17,8 +17,11 @@ func NewSearchController(s *services.SearchService) *SearchController {
 }
 
 func (c *SearchController) HandleSearch(w http.ResponseWriter, r *http.Request) {
-	// Parámetros de búsqueda
-	query := r.URL.Query().Get("query")
+	// Parámetros de búsqueda - aceptar tanto 'q' como 'query' para compatibilidad
+	query := r.URL.Query().Get("q")
+	if query == "" {
+		query = r.URL.Query().Get("query")
+	}
 
 	// Filtros opcionales
 	filters := make(map[string]interface{})
