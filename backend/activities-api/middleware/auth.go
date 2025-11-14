@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"arq-soft-II/backend/activities-api/clients"
 	"arq-soft-II/backend/activities-api/utils"
 	"net/http"
 	"strings"
@@ -33,21 +32,16 @@ func AdminOnly(usersAPI string) gin.HandlerFunc {
 			return
 		}
 
-		user, err := clients.GetUserByID(usersAPI, claims.UserID)
-		if err != nil {
-			c.JSON(http.StatusForbidden, gin.H{"error": "User not accessible"})
-			c.Abort()
-			return
-		}
-
-		if user.Role != "admin" && user.Role != "root" {
+		// Verificar el rol directamente del JWT (más eficiente, sin llamada a API)
+		if claims.Role != "admin" && claims.Role != "root" && claims.Role != "super_admin" {
 			c.JSON(http.StatusForbidden, gin.H{"error": "Admin role required"})
 			c.Abort()
 			return
 		}
 
-		// Setear el user_id en el contexto para usarlo después
+		// Setear información del usuario en el contexto
 		c.Set("user_id", claims.UserID)
+		c.Set("user_role", claims.Role)
 
 		c.Next()
 	}

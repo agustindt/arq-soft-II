@@ -4,9 +4,6 @@ import (
 	"net/http"
 	"strings"
 
-	"arq-soft-II/backend/users-api/config"
-	"arq-soft-II/backend/users-api/models"
-
 	"github.com/gin-gonic/gin"
 )
 
@@ -14,7 +11,7 @@ import (
 func RequireRole(requiredRole string) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		// Obtener información del usuario del contexto (viene del JWTAuth middleware)
-		userID, exists := c.Get("user_id")
+		userRoleInterface, exists := c.Get("user_role")
 		if !exists {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error":   "User not authenticated",
@@ -24,32 +21,30 @@ func RequireRole(requiredRole string) gin.HandlerFunc {
 			return
 		}
 
-		// Obtener el usuario de la base de datos para verificar su rol
-		var user models.User
-		db := config.GetDB()
-		if err := db.First(&user, userID).Error; err != nil {
+		userRole, ok := userRoleInterface.(string)
+		if !ok {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"error":   "User not found",
-				"message": "User account not found",
+				"error":   "Invalid user role",
+				"message": "User role not found in token",
 			})
 			c.Abort()
 			return
 		}
 
 		// Verificar si el usuario tiene el rol requerido
-		if !hasRole(user.Role, requiredRole) {
+		if !hasRole(userRole, requiredRole) {
 			c.JSON(http.StatusForbidden, gin.H{
 				"error":         "Insufficient permissions",
 				"message":       "You don't have permission to access this resource",
 				"required_role": requiredRole,
-				"user_role":     user.Role,
+				"user_role":     userRole,
 			})
 			c.Abort()
 			return
 		}
 
-		// Agregar información del rol al contexto
-		c.Set("userRole", user.Role)
+		// Agregar información del rol al contexto (ya está en user_role pero también en userRole para compatibilidad)
+		c.Set("userRole", userRole)
 		c.Next()
 	}
 }
@@ -57,7 +52,7 @@ func RequireRole(requiredRole string) gin.HandlerFunc {
 // RequireAnyRole middleware que requiere cualquiera de los roles especificados
 func RequireAnyRole(roles ...string) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID, exists := c.Get("user_id")
+		userRoleInterface, exists := c.Get("user_role")
 		if !exists {
 			c.JSON(http.StatusUnauthorized, gin.H{
 				"error":   "User not authenticated",
@@ -67,12 +62,11 @@ func RequireAnyRole(roles ...string) gin.HandlerFunc {
 			return
 		}
 
-		var user models.User
-		db := config.GetDB()
-		if err := db.First(&user, userID).Error; err != nil {
+		userRole, ok := userRoleInterface.(string)
+		if !ok {
 			c.JSON(http.StatusUnauthorized, gin.H{
-				"error":   "User not found",
-				"message": "User account not found",
+				"error":   "Invalid user role",
+				"message": "User role not found in token",
 			})
 			c.Abort()
 			return
@@ -81,7 +75,7 @@ func RequireAnyRole(roles ...string) gin.HandlerFunc {
 		// Verificar si el usuario tiene alguno de los roles permitidos
 		hasPermission := false
 		for _, role := range roles {
-			if hasRole(user.Role, role) {
+			if hasRole(userRole, role) {
 				hasPermission = true
 				break
 			}
@@ -92,13 +86,13 @@ func RequireAnyRole(roles ...string) gin.HandlerFunc {
 				"error":         "Insufficient permissions",
 				"message":       "You don't have permission to access this resource",
 				"allowed_roles": roles,
-				"user_role":     user.Role,
+				"user_role":     userRole,
 			})
 			c.Abort()
 			return
 		}
 
-		c.Set("userRole", user.Role)
+		c.Set("userRole", userRole)
 		c.Next()
 	}
 }

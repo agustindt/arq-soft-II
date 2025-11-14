@@ -34,7 +34,7 @@ type changePasswordRequest struct {
 
 // GetProfile returns the profile for the authenticated user.
 func (ctrl *UserController) GetProfile(c *gin.Context) {
-	userID, _, _, exists := middleware.GetUserFromContext(c)
+	userID, _, _, _, exists := middleware.GetUserFromContext(c)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error":   "User not found in context",
@@ -67,7 +67,7 @@ func (ctrl *UserController) GetProfile(c *gin.Context) {
 
 // UpdateProfile updates fields on the authenticated user's profile.
 func (ctrl *UserController) UpdateProfile(c *gin.Context) {
-	userID, _, _, exists := middleware.GetUserFromContext(c)
+	userID, _, _, _, exists := middleware.GetUserFromContext(c)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error":   "User not found in context",
@@ -109,7 +109,7 @@ func (ctrl *UserController) UpdateProfile(c *gin.Context) {
 
 // ChangePassword updates the password for the authenticated user.
 func (ctrl *UserController) ChangePassword(c *gin.Context) {
-	userID, _, _, exists := middleware.GetUserFromContext(c)
+	userID, _, _, _, exists := middleware.GetUserFromContext(c)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error":   "User not found in context",
@@ -226,7 +226,7 @@ func (ctrl *UserController) ListUsers(c *gin.Context) {
 
 // UploadAvatar uploads and associates a new avatar for the authenticated user.
 func (ctrl *UserController) UploadAvatar(c *gin.Context) {
-	userID, _, _, exists := middleware.GetUserFromContext(c)
+	userID, _, _, _, exists := middleware.GetUserFromContext(c)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error":   "User not found in context",
@@ -337,7 +337,7 @@ func (ctrl *UserController) UploadAvatar(c *gin.Context) {
 
 // DeleteAvatar removes the avatar association for the authenticated user.
 func (ctrl *UserController) DeleteAvatar(c *gin.Context) {
-	userID, _, _, exists := middleware.GetUserFromContext(c)
+	userID, _, _, _, exists := middleware.GetUserFromContext(c)
 	if !exists {
 		c.JSON(http.StatusUnauthorized, gin.H{
 			"error":   "User not found in context",

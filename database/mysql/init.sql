@@ -21,6 +21,7 @@ CREATE INDEX idx_users_username ON users(username);
 CREATE INDEX idx_users_role ON users(role);
 
 -- Usuario administrador por defecto
+-- Contraseña: password
 INSERT INTO users (username, email, first_name, last_name, password_hash, role)
-VALUES ('admin', 'admin@example.com', 'Admin', 'User', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin')
+VALUES ('admin', 'admin@example.com', 'Admin', 'User', '$2a$10$dyX0fZvCTxYIuntXCbAtO.PMpEkc94lTAF30H7r/Y1H9MTos5wZP2', 'admin')
 ON DUPLICATE KEY UPDATE username=username;

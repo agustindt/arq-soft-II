@@ -71,6 +71,7 @@ func (s *AuthService) Register(ctx context.Context, input RegisterInput) (*AuthR
 		Password:  hashedPassword,
 		FirstName: input.FirstName,
 		LastName:  input.LastName,
+		Role:      "user",
 		IsActive:  true,
 	}
 
@@ -78,7 +79,7 @@ func (s *AuthService) Register(ctx context.Context, input RegisterInput) (*AuthR
 		return nil, err
 	}
 
-	token, err := utils.GenerateJWT(user.ID, user.Email, user.Username)
+	token, err := utils.GenerateJWT(user.ID, user.Email, user.Username, user.Role)
 	if err != nil {
 		return nil, err
 	}
@@ -109,7 +110,7 @@ func (s *AuthService) Login(ctx context.Context, input LoginInput) (*AuthResult,
 		return nil, ErrInvalidCredentials
 	}
 
-	token, err := utils.GenerateJWT(user.ID, user.Email, user.Username)
+	token, err := utils.GenerateJWT(user.ID, user.Email, user.Username, user.Role)
 	if err != nil {
 		return nil, err
 	}

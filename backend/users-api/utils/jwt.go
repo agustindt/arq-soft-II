@@ -13,6 +13,7 @@ type Claims struct {
 	UserID   uint   `json:"user_id"`
 	Email    string `json:"email"`
 	Username string `json:"username"`
+	Role     string `json:"role"`
 	jwt.RegisteredClaims
 }
 
@@ -26,12 +27,13 @@ func GetJWTSecret() []byte {
 }
 
 // GenerateJWT genera un token JWT para un usuario
-func GenerateJWT(userID uint, email, username string) (string, error) {
+func GenerateJWT(userID uint, email, username, role string) (string, error) {
 	// Crear los claims
 	claims := Claims{
 		UserID:   userID,
 		Email:    email,
 		Username: username,
+		Role:     role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(24 * time.Hour)), // Expira en 24 horas
 			IssuedAt:  jwt.NewNumericDate(time.Now()),
@@ -84,5 +86,5 @@ func RefreshJWT(tokenString string) (string, error) {
 	}
 
 	// Generar nuevo token con los mismos datos de usuario
-	return GenerateJWT(claims.UserID, claims.Email, claims.Username)
+	return GenerateJWT(claims.UserID, claims.Email, claims.Username, claims.Role)
 }

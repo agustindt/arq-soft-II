@@ -51,6 +51,7 @@ func JWTAuth() gin.HandlerFunc {
 		c.Set("user_id", claims.UserID)
 		c.Set("user_email", claims.Email)
 		c.Set("user_username", claims.Username)
+		c.Set("user_role", claims.Role)
 
 		// Continuar con el siguiente handler
 		c.Next()
@@ -58,22 +59,24 @@ func JWTAuth() gin.HandlerFunc {
 }
 
 // GetUserFromContext obtiene la información del usuario desde el contexto
-func GetUserFromContext(c *gin.Context) (userID uint, email, username string, exists bool) {
+func GetUserFromContext(c *gin.Context) (userID uint, email, username, role string, exists bool) {
 	userIDInterface, existsID := c.Get("user_id")
 	emailInterface, existsEmail := c.Get("user_email")
 	usernameInterface, existsUsername := c.Get("user_username")
+	roleInterface, existsRole := c.Get("user_role")
 
-	if !existsID || !existsEmail || !existsUsername {
-		return 0, "", "", false
+	if !existsID || !existsEmail || !existsUsername || !existsRole {
+		return 0, "", "", "", false
 	}
 
 	userID, okID := userIDInterface.(uint)
 	email, okEmail := emailInterface.(string)
 	username, okUsername := usernameInterface.(string)
+	role, okRole := roleInterface.(string)
 
-	if !okID || !okEmail || !okUsername {
-		return 0, "", "", false
+	if !okID || !okEmail || !okUsername || !okRole {
+		return 0, "", "", "", false
 	}
 
-	return userID, email, username, true
+	return userID, email, username, role, true
 }

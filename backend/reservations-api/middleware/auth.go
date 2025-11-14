@@ -1,7 +1,6 @@
 package middleware
 
 import (
-	"arq-soft-II/backend/reservations-api/clients"
 	"net/http"
 	"strings"
 
@@ -34,21 +33,16 @@ func AdminOnly(usersAPI string) gin.HandlerFunc {
 			return
 		}
 
-		user, err := clients.GetUserByID(usersAPI, claims.UserID)
-		if err != nil {
-			c.JSON(http.StatusForbidden, gin.H{"error": "User not accessible"})
-			c.Abort()
-			return
-		}
-
-		if user.Role != "admin" {
+		// Verificar el rol directamente del JWT (más eficiente, sin llamada a API)
+		if claims.Role != "admin" && claims.Role != "root" && claims.Role != "super_admin" {
 			c.JSON(http.StatusForbidden, gin.H{"error": "Admin role required"})
 			c.Abort()
 			return
 		}
 
-		// Setear el user_id en el contexto si lo querés usar después
+		// Setear información del usuario en el contexto
 		c.Set("user_id", claims.UserID)
+		c.Set("user_role", claims.Role)
 
 		c.Next()
 	}
@@ -79,16 +73,9 @@ func AuthRequired(usersAPI string) gin.HandlerFunc {
 			return
 		}
 
-		// Verificar que el usuario existe (sin verificar role)
-		_, err = clients.GetUserByID(usersAPI, claims.UserID)
-		if err != nil {
-			c.JSON(http.StatusForbidden, gin.H{"error": "User not accessible"})
-			c.Abort()
-			return
-		}
-
-		// Setear el user_id en el contexto para usar en el controller
+		// Setear información del usuario en el contexto
 		c.Set("user_id", claims.UserID)
+		c.Set("user_role", claims.Role)
 
 		c.Next()
 	}
