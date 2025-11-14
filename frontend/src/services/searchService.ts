@@ -11,21 +11,35 @@ const searchApi: AxiosInstance = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  timeout: 10000, // 10 second timeout
 });
+
+// Response interceptor for better error handling
+searchApi.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Enhance error message
+    if (error.code === "ECONNABORTED") {
+      error.message =
+        "Request timeout: The search service took too long to respond";
+    } else if (error.code === "ERR_NETWORK") {
+      error.message = "Network error: Unable to connect to search service";
+    }
+    return Promise.reject(error);
+  }
+);
 
 // Search Service
 export const searchService = {
   // Search activities with filters
-  async searchActivities(
-    filters: SearchFilters = {}
-  ): Promise<SearchResult> {
+  async searchActivities(filters: SearchFilters = {}): Promise<SearchResult> {
     const params = new URLSearchParams();
 
-    if (filters.query) {
-      params.append("query", filters.query);
-    } else {
-      params.append("query", "*");
+    // Only add query parameter if it's not empty
+    if (filters.query && filters.query.trim()) {
+      params.append("query", filters.query.trim());
     }
+    // If no query, let the backend handle it (it will use *:* for all documents)
 
     if (filters.category) {
       params.append("category", filters.category);
@@ -81,4 +95,3 @@ export const searchService = {
 };
 
 export default searchService;
-

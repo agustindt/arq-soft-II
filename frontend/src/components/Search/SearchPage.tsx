@@ -63,7 +63,7 @@ function SearchPage(): JSX.Element {
 
     try {
       const filters: SearchFilters = {
-        query: query || undefined,
+        query: query && query.trim() ? query.trim() : undefined,
         category: category !== "all" ? category : undefined,
         difficulty: difficulty !== "all" ? difficulty : undefined,
         price_min: priceRange[0] > 0 ? priceRange[0] : undefined,
@@ -73,8 +73,8 @@ function SearchPage(): JSX.Element {
       };
 
       const result = await searchService.searchActivities(filters);
-      setActivities(result.results);
-      setTotalFound(result.total_found);
+      setActivities(result.results || []);
+      setTotalFound(result.total_found || 0);
 
       // Update URL params
       const newParams = new URLSearchParams();
@@ -83,8 +83,19 @@ function SearchPage(): JSX.Element {
       if (filters.difficulty) newParams.set("difficulty", filters.difficulty);
       setSearchParams(newParams);
     } catch (err: any) {
-      setError(err.message || "Failed to search activities");
       console.error("Error searching activities:", err);
+      
+      // Better error handling
+      if (err.response) {
+        // Server responded with error status
+        setError(err.response.data?.message || `Server error: ${err.response.status}`);
+      } else if (err.request) {
+        // Request was made but no response received
+        setError("Network error: Unable to connect to search service. Please check your connection.");
+      } else {
+        // Something else happened
+        setError(err.message || "Failed to search activities. Please try again.");
+      }
     } finally {
       setLoading(false);
     }
@@ -174,7 +185,14 @@ function SearchPage(): JSX.Element {
                 <Select
                   value={category}
                   label="Category"
-                  onChange={(e) => setCategory(e.target.value)}
+                  onChange={(e) => {
+                    setCategory(e.target.value);
+                    // Trigger search automatically when filter changes
+                    setTimeout(() => {
+                      setPage(1);
+                      performSearch();
+                    }, 100);
+                  }}
                 >
                   <MenuItem value="all">All Categories</MenuItem>
                   <MenuItem value="football">Football</MenuItem>
@@ -196,7 +214,14 @@ function SearchPage(): JSX.Element {
                 <Select
                   value={difficulty}
                   label="Difficulty"
-                  onChange={(e) => setDifficulty(e.target.value)}
+                  onChange={(e) => {
+                    setDifficulty(e.target.value);
+                    // Trigger search automatically when filter changes
+                    setTimeout(() => {
+                      setPage(1);
+                      performSearch();
+                    }, 100);
+                  }}
                 >
                   <MenuItem value="all">All Levels</MenuItem>
                   <MenuItem value="beginner">Beginner</MenuItem>

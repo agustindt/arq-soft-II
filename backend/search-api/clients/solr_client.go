@@ -95,7 +95,7 @@ func (s *SolrClient) Search(query string, filters map[string]interface{}) (*Solr
 	params := url.Values{}
 
 	// Query principal
-	if query == "" {
+	if query == "" || query == "*" {
 		params.Set("q", "*:*") // búsqueda de todos los documentos
 	} else {
 		// Búsqueda en múltiples campos

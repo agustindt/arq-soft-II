@@ -4,6 +4,7 @@ import (
 	"arq-soft-II/backend/reservations-api/domain"
 	"context"
 	"net/http"
+	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -64,7 +65,31 @@ func (c *ReservasController) CreateReserva(ctx *gin.Context) {
 		return
 	}
 
-	Reserva, err := c.service.Create(ctx, newReserva)
+	// Obtener user_id del contexto (seteado por el middleware AuthRequired)
+	if userID, exists := ctx.Get("user_id"); exists {
+		if uid, ok := userID.(uint); ok {
+			// Agregar el user_id a la reserva
+			newReserva.UsersID = []int{int(uid)}
+		}
+	} else {
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"error": "User ID not found in context",
+		})
+		return
+	}
+
+	// Establecer timestamps si no están presentes
+	if newReserva.CreatedAt.IsZero() {
+		newReserva.CreatedAt = time.Now()
+	}
+	if newReserva.UpdatedAt.IsZero() {
+		newReserva.UpdatedAt = time.Now()
+	}
+	if newReserva.Status == "" {
+		newReserva.Status = "Pendiente"
+	}
+
+	Reserva, err := c.service.Create(ctx.Request.Context(), newReserva)
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to create Reserva",

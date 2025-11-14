@@ -171,10 +171,26 @@ function Profile(): JSX.Element {
   };
 
   return (
-    <Box sx={{ maxWidth: 800, mx: "auto" }}>
-      <Typography variant="h4" gutterBottom>
-        My Profile
-      </Typography>
+    <Box sx={{ maxWidth: 1000, mx: "auto" }}>
+      <Box sx={{ mb: 4 }}>
+        <Typography
+          variant="h4"
+          gutterBottom
+          sx={{
+            fontWeight: 700,
+            background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+            mb: 1,
+          }}
+        >
+          My Profile
+        </Typography>
+        <Typography variant="h6" color="textSecondary" sx={{ fontWeight: 400 }}>
+          Manage your personal information and account settings
+        </Typography>
+      </Box>
 
       {message.text && (
         <Alert
@@ -189,7 +205,12 @@ function Profile(): JSX.Element {
       <Grid container spacing={3}>
         {/* Profile Information */}
         <Grid item xs={12} md={8}>
-          <Card>
+          <Card
+            sx={{
+              background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+              border: "1px solid rgba(99, 102, 241, 0.1)",
+            }}
+          >
             <CardContent>
               <Box
                 sx={{
@@ -280,6 +301,19 @@ function Profile(): JSX.Element {
                 startIcon={<LockIcon />}
                 onClick={() => setPasswordDialogOpen(true)}
                 variant="outlined"
+                sx={{
+                  py: 1.5,
+                  fontWeight: 600,
+                  borderColor: "primary.main",
+                  color: "primary.main",
+                  "&:hover": {
+                    borderColor: "primary.dark",
+                    backgroundColor: "rgba(99, 102, 241, 0.05)",
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 4px 12px rgba(99, 102, 241, 0.2)",
+                  },
+                  transition: "all 0.3s ease",
+                }}
               >
                 Change Password
               </Button>
@@ -289,16 +323,23 @@ function Profile(): JSX.Element {
 
         {/* Profile Summary */}
         <Grid item xs={12} md={4}>
-          <Card>
+          <Card
+            sx={{
+              background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+              border: "1px solid rgba(99, 102, 241, 0.1)",
+            }}
+          >
             <CardContent sx={{ textAlign: "center" }}>
               <Avatar
                 sx={{
-                  width: 100,
-                  height: 100,
+                  width: 120,
+                  height: 120,
                   mx: "auto",
-                  mb: 2,
-                  bgcolor: "primary.main",
-                  fontSize: "2rem",
+                  mb: 3,
+                  background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                  fontSize: "3rem",
+                  fontWeight: 700,
+                  boxShadow: "0 8px 24px rgba(99, 102, 241, 0.3)",
                 }}
               >
                 {user?.first_name?.charAt(0)?.toUpperCase()}

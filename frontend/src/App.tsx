@@ -19,20 +19,159 @@ import { ActivitiesList } from "./components/Home";
 import { ActivityDetails } from "./components/ActivityDetails";
 import { SearchPage } from "./components/Search";
 import { MyReservations } from "./components/MyActivities";
-import { AdminDashboard, ActivityManagement, CreateActivity } from "./components/Admin";
+import {
+  AdminDashboard,
+  ActivityManagement,
+  CreateActivity,
+} from "./components/Admin";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
-// Tema personalizado para la app
+// Tema personalizado moderno para la app
 const theme = createTheme({
   palette: {
+    mode: "light",
     primary: {
-      main: "#2196f3",
+      main: "#6366f1", // Indigo moderno
+      light: "#818cf8",
+      dark: "#4f46e5",
+      contrastText: "#ffffff",
     },
     secondary: {
-      main: "#f50057",
+      main: "#ec4899", // Pink moderno
+      light: "#f472b6",
+      dark: "#db2777",
+      contrastText: "#ffffff",
     },
     background: {
-      default: "#f5f5f5",
+      default: "#f8fafc",
+      paper: "#ffffff",
+    },
+    text: {
+      primary: "#1e293b",
+      secondary: "#64748b",
+    },
+    success: {
+      main: "#10b981",
+      light: "#34d399",
+      dark: "#059669",
+    },
+    warning: {
+      main: "#f59e0b",
+      light: "#fbbf24",
+      dark: "#d97706",
+    },
+    error: {
+      main: "#ef4444",
+      light: "#f87171",
+      dark: "#dc2626",
+    },
+  },
+  typography: {
+    fontFamily: [
+      "-apple-system",
+      "BlinkMacSystemFont",
+      '"Segoe UI"',
+      "Roboto",
+      '"Helvetica Neue"',
+      "Arial",
+      "sans-serif",
+      '"Apple Color Emoji"',
+      '"Segoe UI Emoji"',
+      '"Segoe UI Symbol"',
+    ].join(","),
+    h1: {
+      fontWeight: 700,
+      fontSize: "2.5rem",
+      lineHeight: 1.2,
+    },
+    h2: {
+      fontWeight: 700,
+      fontSize: "2rem",
+      lineHeight: 1.3,
+    },
+    h3: {
+      fontWeight: 600,
+      fontSize: "1.75rem",
+      lineHeight: 1.4,
+    },
+    h4: {
+      fontWeight: 600,
+      fontSize: "1.5rem",
+      lineHeight: 1.4,
+    },
+    h5: {
+      fontWeight: 600,
+      fontSize: "1.25rem",
+      lineHeight: 1.5,
+    },
+    h6: {
+      fontWeight: 600,
+      fontSize: "1.125rem",
+      lineHeight: 1.5,
+    },
+    button: {
+      fontWeight: 600,
+      textTransform: "none",
+    },
+  },
+  shape: {
+    borderRadius: 12,
+  },
+  components: {
+    MuiButton: {
+      styleOverrides: {
+        root: {
+          borderRadius: 10,
+          padding: "10px 24px",
+          boxShadow: "none",
+          "&:hover": {
+            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+          },
+        },
+        contained: {
+          background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+          "&:hover": {
+            background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+          },
+        },
+      },
+    },
+    MuiCard: {
+      styleOverrides: {
+        root: {
+          borderRadius: 16,
+          boxShadow:
+            "0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)",
+          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+          "&:hover": {
+            boxShadow:
+              "0 10px 20px rgba(0, 0, 0, 0.1), 0 6px 6px rgba(0, 0, 0, 0.08)",
+          },
+        },
+      },
+    },
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          "& .MuiOutlinedInput-root": {
+            borderRadius: 10,
+            "&:hover fieldset": {
+              borderColor: "#6366f1",
+            },
+            "&.Mui-focused fieldset": {
+              borderColor: "#6366f1",
+            },
+          },
+        },
+      },
+    },
+    MuiAppBar: {
+      styleOverrides: {
+        root: {
+          background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
+        },
+      },
     },
   },
 });
@@ -70,7 +209,14 @@ function AppContent(): JSX.Element {
   return (
     <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
       {isAuthenticated && <Navbar />}
-      <Box component="main" sx={{ flexGrow: 1, p: isAuthenticated ? 3 : 0 }}>
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: isAuthenticated ? { xs: 2, sm: 3, md: 4 } : 0,
+          backgroundColor: "background.default",
+        }}
+      >
         <Routes>
           {/* Rutas públicas */}
           <Route

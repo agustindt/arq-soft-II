@@ -128,37 +128,62 @@ function Register(): JSX.Element {
   };
 
   return (
-    <Container component="main" maxWidth="md">
-      <Box
-        sx={{
-          marginTop: 8,
-          display: "flex",
-          flexDirection: "column",
-          alignItems: "center",
-          minHeight: "100vh",
-        }}
-      >
-        <Card sx={{ width: "100%", mt: 4 }}>
-          <CardContent sx={{ p: 4 }}>
+    <Box
+      sx={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+        position: "relative",
+        overflow: "hidden",
+        py: 4,
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          width: "100%",
+          height: "100%",
+          background: "radial-gradient(circle at 20% 50%, rgba(120, 119, 198, 0.3) 0%, transparent 50%), radial-gradient(circle at 80% 80%, rgba(139, 92, 246, 0.3) 0%, transparent 50%)",
+          pointerEvents: "none",
+        },
+      }}
+    >
+      <Container component="main" maxWidth="md" sx={{ position: "relative", zIndex: 1 }}>
+        <Box
+          sx={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          <Card
+            sx={{
+              width: "100%",
+              borderRadius: 4,
+              boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
+              overflow: "hidden",
+            }}
+          >
             <Box
               sx={{
-                display: "flex",
-                flexDirection: "column",
-                alignItems: "center",
+                background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                p: 3,
+                textAlign: "center",
+                color: "white",
               }}
             >
-              <Typography component="h1" variant="h4" gutterBottom>
-                Sports Activities
-              </Typography>
               <Typography
-                component="h2"
-                variant="h5"
-                color="textSecondary"
+                component="h1"
+                variant="h4"
                 gutterBottom
+                sx={{ fontWeight: 700, mb: 1 }}
               >
-                Create Account
+                🏃‍♀️ Sports Activities
+              </Typography>
+              <Typography variant="h6" sx={{ opacity: 0.9, fontWeight: 400 }}>
+                Create your account and start your journey
               </Typography>
             </Box>
+            <CardContent sx={{ p: 4 }}>
 
             {error && (
               <Alert severity="error" sx={{ mt: 2, mb: 2 }}>
@@ -266,7 +291,20 @@ function Register(): JSX.Element {
                 type="submit"
                 fullWidth
                 variant="contained"
-                sx={{ mt: 3, mb: 2 }}
+                sx={{
+                  mt: 3,
+                  mb: 2,
+                  py: 1.5,
+                  fontSize: "1rem",
+                  fontWeight: 600,
+                  background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                  "&:hover": {
+                    background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+                    transform: "translateY(-2px)",
+                    boxShadow: "0 8px 20px rgba(99, 102, 241, 0.4)",
+                  },
+                  transition: "all 0.3s ease",
+                }}
                 disabled={loading}
                 size="large"
               >
@@ -277,18 +315,25 @@ function Register(): JSX.Element {
                 )}
               </Button>
 
-              <Divider sx={{ my: 2 }} />
+              <Divider sx={{ my: 3 }}>
+                <Typography variant="body2" color="textSecondary">
+                  OR
+                </Typography>
+              </Divider>
 
               <Box sx={{ textAlign: "center" }}>
-                <Typography variant="body2">
+                <Typography variant="body2" color="textSecondary">
                   Already have an account?{" "}
                   <Link
                     to="/login"
                     style={{
                       textDecoration: "none",
-                      color: "#2196f3",
-                      fontWeight: "bold",
+                      color: "#6366f1",
+                      fontWeight: 600,
+                      transition: "color 0.2s",
                     }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = "#4f46e5")}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = "#6366f1")}
                   >
                     Sign In
                   </Link>
@@ -299,6 +344,7 @@ function Register(): JSX.Element {
         </Card>
       </Box>
     </Container>
+    </Box>
   );
 }
 

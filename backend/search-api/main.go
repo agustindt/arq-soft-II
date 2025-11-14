@@ -77,18 +77,34 @@ func main() {
 	// Iniciar el consumer (escucha eventos de Activities)
 	config.StartRabbitConsumer(mq, service)
 
+	// CORS middleware function
+	corsMiddleware := func(next http.HandlerFunc) http.HandlerFunc {
+		return func(w http.ResponseWriter, r *http.Request) {
+			w.Header().Set("Access-Control-Allow-Origin", "*")
+			w.Header().Set("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization")
+
+			if r.Method == http.MethodOptions {
+				w.WriteHeader(http.StatusNoContent)
+				return
+			}
+
+			next(w, r)
+		}
+	}
+
 	// 🔹 Endpoints públicos
-	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/health", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, "Search API is running")
-	})
+	}))
 
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, "Search API - Sports Activities Platform")
-	})
+	}))
 
-	http.HandleFunc("/search", controller.HandleSearch)
+	http.HandleFunc("/search", corsMiddleware(controller.HandleSearch))
 
 	// 🔹 Endpoint interno protegido por X-Service-Token
 	http.Handle("/internal/reindex",

@@ -95,8 +95,13 @@ function ActivitiesList(): JSX.Element {
     navigate(`/activities/${id}`);
   };
 
-  const getCategoryColor = (category: string): "default" | "primary" | "secondary" | "success" | "warning" | "error" => {
-    const colors: Record<string, "default" | "primary" | "secondary" | "success" | "warning" | "error"> = {
+  const getCategoryColor = (
+    category: string
+  ): "default" | "primary" | "secondary" | "success" | "warning" | "error" => {
+    const colors: Record<
+      string,
+      "default" | "primary" | "secondary" | "success" | "warning" | "error"
+    > = {
       football: "primary",
       basketball: "secondary",
       tennis: "success",
@@ -114,7 +119,10 @@ function ActivitiesList(): JSX.Element {
   const getDifficultyColor = (
     difficulty: string
   ): "default" | "primary" | "secondary" | "success" | "warning" | "error" => {
-    const colors: Record<string, "default" | "primary" | "secondary" | "success" | "warning" | "error"> = {
+    const colors: Record<
+      string,
+      "default" | "primary" | "secondary" | "success" | "warning" | "error"
+    > = {
       beginner: "success",
       intermediate: "warning",
       advanced: "error",
@@ -132,19 +140,47 @@ function ActivitiesList(): JSX.Element {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <Typography variant="h4" gutterBottom>
-        🏃‍♀️ Sports Activities
-      </Typography>
-      <Typography variant="subtitle1" color="textSecondary" gutterBottom sx={{ mb: 3 }}>
-        Discover and join amazing sports activities in your area
-      </Typography>
+      <Box sx={{ mb: 4 }}>
+        <Typography
+          variant="h4"
+          gutterBottom
+          sx={{
+            fontWeight: 700,
+            background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+            mb: 1,
+          }}
+        >
+          🏃‍♀️ Sports Activities
+        </Typography>
+        <Typography variant="h6" color="textSecondary" sx={{ fontWeight: 400 }}>
+          Discover and join amazing sports activities in your area
+        </Typography>
+      </Box>
 
       {/* Search and Filters */}
-      <Paper sx={{ p: 3, mb: 3 }}>
-        <Stack spacing={2}>
-          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap" }}>
+      <Paper
+        sx={{
+          p: 3,
+          mb: 4,
+          borderRadius: 3,
+          background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+          border: "1px solid rgba(99, 102, 241, 0.1)",
+        }}
+      >
+        <Stack spacing={3}>
+          {/* Search Row */}
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              alignItems: "stretch",
+              flexWrap: { xs: "wrap", sm: "nowrap" },
+            }}
+          >
             <TextField
-              fullWidth
               placeholder="Search activities..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
@@ -160,20 +196,75 @@ function ActivitiesList(): JSX.Element {
                   </InputAdornment>
                 ),
               }}
-              sx={{ flexGrow: 1, minWidth: 200 }}
+              sx={{
+                flex: { xs: "1 1 100%", sm: "1 1 auto" },
+                minWidth: { xs: "100%", sm: 300 },
+              }}
             />
             <Button
               variant="contained"
               onClick={handleSearch}
               startIcon={<SearchIcon />}
+              sx={{
+                minWidth: { xs: "100%", sm: 140 },
+                px: 3,
+                py: 1.5,
+                fontWeight: 600,
+                background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                "&:hover": {
+                  background:
+                    "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+                  transform: "translateY(-2px)",
+                  boxShadow: "0 6px 16px rgba(99, 102, 241, 0.4)",
+                },
+                transition: "all 0.3s ease",
+              }}
             >
               Search
             </Button>
           </Box>
 
-          <Box sx={{ display: "flex", gap: 2, flexWrap: "wrap", alignItems: "center" }}>
-            <FilterIcon sx={{ color: "text.secondary" }} />
-            <FormControl sx={{ minWidth: 150 }}>
+          {/* Filters Row */}
+          <Box
+            sx={{
+              display: "flex",
+              gap: 2,
+              alignItems: "center",
+              flexWrap: { xs: "wrap", sm: "nowrap" },
+            }}
+          >
+            <Box
+              sx={{
+                display: "flex",
+                alignItems: "center",
+                gap: 1,
+                minWidth: { xs: "100%", sm: "auto" },
+                mr: { xs: 0, sm: 1 },
+              }}
+            >
+              <FilterIcon
+                sx={{
+                  color: "primary.main",
+                  fontSize: 24,
+                }}
+              />
+              <Typography
+                variant="body2"
+                sx={{
+                  fontWeight: 600,
+                  color: "text.secondary",
+                  display: { xs: "none", sm: "block" },
+                }}
+              >
+                Filters:
+              </Typography>
+            </Box>
+            <FormControl
+              sx={{
+                minWidth: { xs: "100%", sm: 180 },
+                flex: { xs: "1 1 100%", sm: "0 1 auto" },
+              }}
+            >
               <InputLabel>Category</InputLabel>
               <Select
                 value={categoryFilter}
@@ -194,7 +285,12 @@ function ActivitiesList(): JSX.Element {
               </Select>
             </FormControl>
 
-            <FormControl sx={{ minWidth: 150 }}>
+            <FormControl
+              sx={{
+                minWidth: { xs: "100%", sm: 180 },
+                flex: { xs: "1 1 100%", sm: "0 1 auto" },
+              }}
+            >
               <InputLabel>Difficulty</InputLabel>
               <Select
                 value={difficultyFilter}
@@ -241,10 +337,12 @@ function ActivitiesList(): JSX.Element {
                   display: "flex",
                   flexDirection: "column",
                   cursor: "pointer",
-                  transition: "transform 0.2s, box-shadow 0.2s",
+                  transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
+                  border: "1px solid rgba(0, 0, 0, 0.05)",
                   "&:hover": {
-                    transform: "translateY(-4px)",
-                    boxShadow: 6,
+                    transform: "translateY(-8px)",
+                    boxShadow: "0 12px 24px rgba(99, 102, 241, 0.15)",
+                    borderColor: "rgba(99, 102, 241, 0.2)",
                   },
                 }}
                 onClick={() => handleActivityClick(activity.id)}
@@ -260,13 +358,21 @@ function ActivitiesList(): JSX.Element {
                   <Box
                     sx={{
                       height: 200,
-                      bgcolor: "primary.light",
+                      background:
+                        "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
                       display: "flex",
                       alignItems: "center",
                       justifyContent: "center",
                     }}
                   >
-                    <Typography variant="h4" color="primary.contrastText">
+                    <Typography
+                      variant="h3"
+                      sx={{
+                        color: "white",
+                        fontWeight: 700,
+                        textShadow: "0 2px 4px rgba(0,0,0,0.2)",
+                      }}
+                    >
                       {activity.name.charAt(0)}
                     </Typography>
                   </Box>
@@ -303,7 +409,9 @@ function ActivitiesList(): JSX.Element {
                     {activity.description}
                   </Typography>
 
-                  <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
+                  <Box
+                    sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}
+                  >
                     <Chip
                       label={activity.category}
                       size="small"
@@ -338,14 +446,18 @@ function ActivitiesList(): JSX.Element {
                         gap: 2,
                       }}
                     >
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                      >
                         <PeopleIcon fontSize="small" color="action" />
                         <Typography variant="body2" color="textSecondary">
                           Max: {activity.max_capacity}
                         </Typography>
                       </Box>
 
-                      <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
+                      <Box
+                        sx={{ display: "flex", alignItems: "center", gap: 0.5 }}
+                      >
                         <TimeIcon fontSize="small" color="action" />
                         <Typography variant="body2" color="textSecondary">
                           {activity.duration} min
@@ -355,14 +467,27 @@ function ActivitiesList(): JSX.Element {
                   </Stack>
                 </CardContent>
 
-                <CardActions>
+                <CardActions sx={{ p: 2, pt: 0 }}>
                   <Button
-                    size="small"
+                    size="medium"
                     variant="contained"
                     fullWidth
                     onClick={(e) => {
                       e.stopPropagation();
                       handleActivityClick(activity.id);
+                    }}
+                    sx={{
+                      py: 1.2,
+                      fontWeight: 600,
+                      background:
+                        "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                      "&:hover": {
+                        background:
+                          "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
+                        transform: "translateY(-2px)",
+                        boxShadow: "0 6px 16px rgba(99, 102, 241, 0.4)",
+                      },
+                      transition: "all 0.3s ease",
                     }}
                   >
                     View Details
@@ -377,7 +502,8 @@ function ActivitiesList(): JSX.Element {
       {/* Results Count */}
       {activities.length > 0 && (
         <Typography variant="body2" color="textSecondary" sx={{ mt: 3 }}>
-          Showing {activities.length} activity{activities.length !== 1 ? "ies" : ""}
+          Showing {activities.length} activity
+          {activities.length !== 1 ? "ies" : ""}
         </Typography>
       )}
     </Box>
@@ -385,4 +511,3 @@ function ActivitiesList(): JSX.Element {
 }
 
 export default ActivitiesList;
-

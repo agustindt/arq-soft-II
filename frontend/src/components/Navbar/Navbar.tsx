@@ -52,8 +52,8 @@ function Navbar(): JSX.Element {
   const isMenuOpen = Boolean(anchorEl);
 
   return (
-    <AppBar position="static">
-      <Toolbar>
+    <AppBar position="sticky" elevation={0}>
+      <Toolbar sx={{ px: { xs: 2, sm: 3 } }}>
         <Typography
           variant="h6"
           component="div"
@@ -62,13 +62,19 @@ function Navbar(): JSX.Element {
             cursor: "pointer",
             display: "flex",
             alignItems: "center",
+            fontWeight: 700,
+            fontSize: "1.25rem",
+            transition: "opacity 0.2s",
+            "&:hover": {
+              opacity: 0.8,
+            },
           }}
           onClick={() => navigate("/activities")}
         >
           🏃‍♀️ Sports Activities
         </Typography>
 
-        <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.5, sm: 1 } }}>
           {/* Navigation Buttons */}
           <Button
             color="inherit"
@@ -77,8 +83,16 @@ function Navbar(): JSX.Element {
             sx={{
               backgroundColor:
                 location.pathname === "/activities"
-                  ? "rgba(255,255,255,0.1)"
+                  ? "rgba(255,255,255,0.2)"
                   : "transparent",
+              borderRadius: 2,
+              px: 2,
+              py: 1,
+              transition: "all 0.2s",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.15)",
+                transform: "translateY(-1px)",
+              },
             }}
           >
             Activities
@@ -90,8 +104,16 @@ function Navbar(): JSX.Element {
             sx={{
               backgroundColor:
                 location.pathname === "/search"
-                  ? "rgba(255,255,255,0.1)"
+                  ? "rgba(255,255,255,0.2)"
                   : "transparent",
+              borderRadius: 2,
+              px: 2,
+              py: 1,
+              transition: "all 0.2s",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.15)",
+                transform: "translateY(-1px)",
+              },
             }}
           >
             Search
@@ -103,8 +125,16 @@ function Navbar(): JSX.Element {
             sx={{
               backgroundColor:
                 location.pathname === "/my-activities"
-                  ? "rgba(255,255,255,0.1)"
+                  ? "rgba(255,255,255,0.2)"
                   : "transparent",
+              borderRadius: 2,
+              px: 2,
+              py: 1,
+              transition: "all 0.2s",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.15)",
+                transform: "translateY(-1px)",
+              },
             }}
           >
             My Activities
@@ -117,8 +147,16 @@ function Navbar(): JSX.Element {
               sx={{
                 backgroundColor:
                   location.pathname.startsWith("/admin")
-                    ? "rgba(255,255,255,0.1)"
+                    ? "rgba(255,255,255,0.2)"
                     : "transparent",
+                borderRadius: 2,
+                px: 2,
+                py: 1,
+                transition: "all 0.2s",
+                "&:hover": {
+                  backgroundColor: "rgba(255,255,255,0.15)",
+                  transform: "translateY(-1px)",
+                },
               }}
             >
               Admin
@@ -131,8 +169,16 @@ function Navbar(): JSX.Element {
             sx={{
               backgroundColor:
                 location.pathname === "/dashboard"
-                  ? "rgba(255,255,255,0.1)"
+                  ? "rgba(255,255,255,0.2)"
                   : "transparent",
+              borderRadius: 2,
+              px: 2,
+              py: 1,
+              transition: "all 0.2s",
+              "&:hover": {
+                backgroundColor: "rgba(255,255,255,0.15)",
+                transform: "translateY(-1px)",
+              },
             }}
           >
             Dashboard
@@ -146,8 +192,23 @@ function Navbar(): JSX.Element {
             aria-haspopup="true"
             onClick={handleMenuOpen}
             color="inherit"
+            sx={{
+              ml: 1,
+              transition: "transform 0.2s",
+              "&:hover": {
+                transform: "scale(1.1)",
+              },
+            }}
           >
-            <Avatar sx={{ width: 32, height: 32, bgcolor: "secondary.main" }}>
+            <Avatar
+              sx={{
+                width: 36,
+                height: 36,
+                bgcolor: "rgba(255,255,255,0.2)",
+                border: "2px solid rgba(255,255,255,0.3)",
+                fontWeight: 600,
+              }}
+            >
               {user?.first_name?.charAt(0)?.toUpperCase() ||
                 user?.username?.charAt(0)?.toUpperCase() ||
                 "U"}
@@ -170,8 +231,11 @@ function Navbar(): JSX.Element {
             onClose={handleMenuClose}
             PaperProps={{
               sx: {
-                mt: 1,
-                minWidth: 200,
+                mt: 1.5,
+                minWidth: 220,
+                borderRadius: 2,
+                boxShadow: "0 8px 24px rgba(0, 0, 0, 0.15)",
+                border: "1px solid rgba(0, 0, 0, 0.05)",
               },
             }}
           >

@@ -286,13 +286,20 @@ func (s *ReservasServiceImpl) Delete(ctx context.Context, id string) error {
 // validateReserva aplica reglas de negocio para validar un Reserva
 func (s *ReservasServiceImpl) validateReserva(Reserva domain.Reserva) error {
 	if strings.TrimSpace(Reserva.Actividad) == "" {
-		return errors.New("name is required and cannot be empty")
+		return errors.New("actividad is required and cannot be empty")
 	}
-	if Reserva.Date.Before(time.Now()) {
+	// Verificar que la fecha no sea zero time
+	if Reserva.Date.IsZero() {
+		return errors.New("date is required and cannot be empty")
+	}
+	// Verificar que la fecha sea posterior a la fecha actual (con un margen de 1 minuto para evitar problemas de tiempo)
+	now := time.Now()
+	oneMinuteAgo := now.Add(-1 * time.Minute)
+	if Reserva.Date.Before(oneMinuteAgo) {
 		return errors.New("la fecha de la reserva debe ser posterior a la fecha actual")
 	}
-	if Reserva.Cupo < 0 {
-		return errors.New("el cupo no puede ser menor a cero")
+	if Reserva.Cupo <= 0 {
+		return errors.New("el cupo debe ser mayor a cero")
 	}
 	if len(Reserva.UsersID) == 0 {
 		return errors.New("debe haber al menos un usuario en la reserva")

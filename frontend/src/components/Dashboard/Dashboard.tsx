@@ -95,12 +95,25 @@ function Dashboard(): JSX.Element {
 
   return (
     <Box sx={{ flexGrow: 1 }}>
-      <Typography variant="h4" gutterBottom>
-        Welcome back, {user?.first_name}! 👋
-      </Typography>
-      <Typography variant="subtitle1" color="textSecondary" gutterBottom>
-        Here's what's happening with your sports activities platform
-      </Typography>
+      <Box sx={{ mb: 4 }}>
+        <Typography
+          variant="h4"
+          gutterBottom
+          sx={{
+            fontWeight: 700,
+            background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+            WebkitBackgroundClip: "text",
+            WebkitTextFillColor: "transparent",
+            backgroundClip: "text",
+            mb: 1,
+          }}
+        >
+          Welcome back, {user?.first_name}! 👋
+        </Typography>
+        <Typography variant="h6" color="textSecondary" sx={{ fontWeight: 400 }}>
+          Here's what's happening with your sports activities platform
+        </Typography>
+      </Box>
 
       {/* API Status */}
       {apiStatus && (
@@ -115,11 +128,24 @@ function Dashboard(): JSX.Element {
       <Grid container spacing={3}>
         {/* User Info Card */}
         <Grid item xs={12} md={6} lg={4}>
-          <Card>
+          <Card
+            sx={{
+              background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+              border: "1px solid rgba(99, 102, 241, 0.1)",
+            }}
+          >
             <CardContent>
               <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
                 <Avatar
-                  sx={{ width: 56, height: 56, mr: 2, bgcolor: "primary.main" }}
+                  sx={{
+                    width: 64,
+                    height: 64,
+                    mr: 2,
+                    background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                    fontSize: "1.5rem",
+                    fontWeight: 700,
+                    boxShadow: "0 4px 12px rgba(99, 102, 241, 0.3)",
+                  }}
                 >
                   {user?.first_name?.charAt(0)?.toUpperCase()}
                 </Avatar>
@@ -156,26 +182,78 @@ function Dashboard(): JSX.Element {
 
         {/* Platform Stats */}
         <Grid item xs={12} md={6} lg={4}>
-          <Card>
+          <Card
+            sx={{
+              background: "linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)",
+              border: "1px solid rgba(99, 102, 241, 0.1)",
+            }}
+          >
             <CardContent>
-              <Typography variant="h6" gutterBottom>
+              <Typography variant="h6" gutterBottom sx={{ fontWeight: 600, mb: 3 }}>
                 Platform Stats
               </Typography>
 
-              <Box sx={{ display: "flex", alignItems: "center", mb: 2 }}>
-                <GroupIcon sx={{ mr: 2, color: "primary.main" }} />
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  mb: 3,
+                  p: 2,
+                  borderRadius: 2,
+                  background: "linear-gradient(135deg, rgba(99, 102, 241, 0.05) 0%, rgba(139, 92, 246, 0.05) 100%)",
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 2,
+                    background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    mr: 2,
+                  }}
+                >
+                  <GroupIcon sx={{ color: "white" }} />
+                </Box>
                 <Box>
-                  <Typography variant="h4">{stats.totalUsers}</Typography>
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: "primary.main" }}>
+                    {stats.totalUsers}
+                  </Typography>
                   <Typography variant="body2" color="textSecondary">
                     Total Users
                   </Typography>
                 </Box>
               </Box>
 
-              <Box sx={{ display: "flex", alignItems: "center" }}>
-                <ActivityIcon sx={{ mr: 2, color: "secondary.main" }} />
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  p: 2,
+                  borderRadius: 2,
+                  background: "linear-gradient(135deg, rgba(236, 72, 153, 0.05) 0%, rgba(219, 39, 119, 0.05) 100%)",
+                }}
+              >
+                <Box
+                  sx={{
+                    width: 48,
+                    height: 48,
+                    borderRadius: 2,
+                    background: "linear-gradient(135deg, #ec4899 0%, #db2777 100%)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    mr: 2,
+                  }}
+                >
+                  <ActivityIcon sx={{ color: "white" }} />
+                </Box>
                 <Box>
-                  <Typography variant="h4">{totalActivities}</Typography>
+                  <Typography variant="h4" sx={{ fontWeight: 700, color: "secondary.main" }}>
+                    {totalActivities}
+                  </Typography>
                   <Typography variant="body2" color="textSecondary">
                     Total Activities
                   </Typography>

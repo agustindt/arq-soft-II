@@ -1,11 +1,11 @@
 package models
 
 import (
-	"time"
 	"database/sql/driver"
 	"encoding/json"
 	"errors"
 	"strings"
+	"time"
 )
 
 // SocialLinks estructura para enlaces de redes sociales
@@ -115,7 +115,7 @@ type User struct {
 	ID               uint         `json:"id" gorm:"primaryKey"`
 	Email            string       `json:"email" gorm:"type:varchar(255);uniqueIndex;not null"`
 	Username         string       `json:"username" gorm:"type:varchar(100);uniqueIndex;not null"`
-	Password         string       `json:"-" gorm:"not null"` // El "-" evita que se serialice en JSON
+	Password         string       `json:"-" gorm:"column:password_hash;type:varchar(255);not null"` // El "-" evita que se serialice en JSON
 	FirstName        string       `json:"first_name" gorm:"type:varchar(100)"`
 	LastName         string       `json:"last_name" gorm:"type:varchar(100)"`
 	
