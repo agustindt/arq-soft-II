@@ -61,7 +61,7 @@ function PublicRoute({ children }: RouteProps): JSX.Element {
     return <div>Loading...</div>;
   }
 
-  return !isAuthenticated ? <>{children}</> : <Navigate to="/dashboard" />;
+  return !isAuthenticated ? <>{children}</> : <Navigate to="/my-activities" />;
 }
 
 function AppContent(): JSX.Element {
@@ -184,7 +184,7 @@ function AppContent(): JSX.Element {
           <Route
             path="/"
             element={
-              <Navigate to={isAuthenticated ? "/activities" : "/login"} />
+              <Navigate to={isAuthenticated ? "/my-activities" : "/login"} />
             }
           />
           <Route path="*" element={<Navigate to="/" />} />

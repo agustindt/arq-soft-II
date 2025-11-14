@@ -82,7 +82,7 @@ function Login(): JSX.Element {
     const result = await login(formData.email, formData.password);
 
     if (result.success) {
-      navigate("/dashboard");
+      navigate("/my-activities");
     }
   };
 
@@ -198,12 +198,20 @@ function Login(): JSX.Element {
         <Card sx={{ width: "100%", mt: 2, backgroundColor: "#f5f5f5" }}>
           <CardContent sx={{ p: 2 }}>
             <Typography variant="subtitle2" gutterBottom>
-              Demo Credentials:
+              💡 Credenciales Demo:
             </Typography>
-            <Typography variant="body2" color="textSecondary">
-              Email: test@example.com
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 1 }}>
+              <strong>Usuario Admin:</strong>
               <br />
-              Password: password123
+              Email: <code>admin@example.com</code>
+              <br />
+              Password: <code>password</code>
+            </Typography>
+            <Typography variant="body2" color="textSecondary" sx={{ mb: 1, mt: 1 }}>
+              O regístrate como nuevo usuario usando el botón "Sign Up"
+            </Typography>
+            <Typography variant="caption" color="textSecondary" sx={{ fontStyle: "italic" }}>
+              Nota: Asegúrate de que el backend esté corriendo en el puerto 8081
             </Typography>
           </CardContent>
         </Card>
