@@ -100,8 +100,8 @@ func main() {
 	// PUT /Reservas/:id - actualizar Reserva existente
 	router.PUT("/reservas/:id", middleware.AdminOnly(usersAPI), ReservaController.UpdateReserva)
 
-	// DELETE /Reservas/:id - eliminar Reserva
-	router.DELETE("/reservas/:id", middleware.AdminOnly(usersAPI), ReservaController.DeleteReserva)
+	// DELETE /Reservas/:id - eliminar Reserva (usuario autenticado puede eliminar sus propias reservas)
+	router.DELETE("/reservas/:id", middleware.AuthRequired(usersAPI), ReservaController.DeleteReserva)
 
 	// Configuración del server
 	srv := &http.Server{

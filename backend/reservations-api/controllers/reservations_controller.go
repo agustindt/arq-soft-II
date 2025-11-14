@@ -176,6 +176,7 @@ func (c *ReservasController) UpdateReserva(ctx *gin.Context) {
 }
 
 // DeleteReserva maneja DELETE /Reservas/:id - Elimina Reserva por ID
+// Usuarios pueden eliminar sus propias reservas, admins pueden eliminar cualquiera
 func (c *ReservasController) DeleteReserva(ctx *gin.Context) {
 	id := ctx.Param("id")
 	if id == "" {
@@ -185,7 +186,19 @@ func (c *ReservasController) DeleteReserva(ctx *gin.Context) {
 		return
 	}
 
-	err := c.service.Delete(ctx, id)
+	// Obtener información del usuario del contexto
+	userID, existsUserID := ctx.Get("user_id")
+	userRole, existsUserRole := ctx.Get("user_role")
+
+	if !existsUserID {
+		ctx.JSON(http.StatusUnauthorized, gin.H{
+			"error": "User ID not found in context",
+		})
+		return
+	}
+
+	// Obtener la reserva para verificar permisos
+	reserva, err := c.service.GetByID(ctx, id)
 	if err != nil {
 		if err.Error() == "Reserva not found" {
 			ctx.JSON(http.StatusNotFound, gin.H{
@@ -195,13 +208,50 @@ func (c *ReservasController) DeleteReserva(ctx *gin.Context) {
 		}
 
 		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to fetch Reserva",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	// Verificar permisos: el usuario debe ser dueño de la reserva o ser admin
+	uid, _ := userID.(uint)
+	isOwner := false
+	for _, userIDInReserva := range reserva.UsersID {
+		if int(uid) == userIDInReserva {
+			isOwner = true
+			break
+		}
+	}
+
+	// Si no es el dueño, verificar si es admin
+	isAdmin := false
+	if existsUserRole {
+		if role, ok := userRole.(string); ok {
+			isAdmin = role == "admin" || role == "super_admin" || role == "root"
+		}
+	}
+
+	if !isOwner && !isAdmin {
+		ctx.JSON(http.StatusForbidden, gin.H{
+			"error": "You can only delete your own reservations",
+		})
+		return
+	}
+
+	// Eliminar la reserva
+	err = c.service.Delete(ctx, id)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to delete Reserva",
 			"details": err.Error(),
 		})
 		return
 	}
 
-	ctx.JSON(http.StatusNoContent, nil)
+	ctx.JSON(http.StatusOK, gin.H{
+		"message": "Reserva eliminada exitosamente",
+	})
 }
 
 // 200 OK - Operación exitosa con contenido

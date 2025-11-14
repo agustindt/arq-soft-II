@@ -271,7 +271,13 @@ Update an existing reservation (admin only).
 
 #### DELETE /reservas/:id
 
-Delete a reservation (admin only).
+Delete/cancel a reservation.
+
+**Authentication:** Required (JWT token in Authorization header)
+
+**Authorization:**
+- Users can delete their own reservations
+- Admins can delete any reservation
 
 **Parameters:**
 - `id` (path parameter) - MongoDB ObjectID
@@ -283,10 +289,17 @@ Delete a reservation (admin only).
 }
 ```
 
+**Error Response (403 Forbidden):**
+```json
+{
+  "error": "You can only delete your own reservations"
+}
+```
+
 **Error Response (404 Not Found):**
 ```json
 {
-  "error": "Reserva no encontrada"
+  "error": "Reserva not found"
 }
 ```
 
@@ -331,7 +344,9 @@ The Reservations API validates JWT tokens issued by the Users API. The JWT must 
 | GET /reservas/:id | ✅ | ✅ | ✅ |
 | POST /reservas | ❌ | ✅ | ✅ |
 | PUT /reservas/:id | ❌ | ❌ | ✅ |
-| DELETE /reservas/:id | ❌ | ❌ | ✅ |
+| DELETE /reservas/:id | ❌ | ✅ (own) | ✅ (any) |
+
+**Note:** Users can only delete their own reservations. Admins can delete any reservation.
 
 ### Admin Middleware
 
