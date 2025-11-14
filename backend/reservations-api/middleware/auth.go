@@ -1,0 +1,82 @@
+package middleware
+
+import (
+	"net/http"
+	"strings"
+
+	"arq-soft-II/backend/reservations-api/utils"
+
+	"github.com/gin-gonic/gin"
+)
+
+func AdminOnly(usersAPI string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+			c.Abort()
+			return
+		}
+
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token format"})
+			c.Abort()
+			return
+		}
+
+		claims, err := utils.ValidateJWT(parts[1])
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.Abort()
+			return
+		}
+
+		// Verificar el rol directamente del JWT (más eficiente, sin llamada a API)
+		if claims.Role != "admin" && claims.Role != "root" && claims.Role != "super_admin" {
+			c.JSON(http.StatusForbidden, gin.H{"error": "Admin role required"})
+			c.Abort()
+			return
+		}
+
+		// Setear información del usuario en el contexto
+		c.Set("user_id", claims.UserID)
+		c.Set("user_role", claims.Role)
+
+		c.Next()
+	}
+}
+
+// AuthRequired valida que el usuario esté autenticado (sin verificar rol)
+func AuthRequired(usersAPI string) gin.HandlerFunc {
+	return func(c *gin.Context) {
+
+		authHeader := c.GetHeader("Authorization")
+		if authHeader == "" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Authorization header required"})
+			c.Abort()
+			return
+		}
+
+		parts := strings.Split(authHeader, " ")
+		if len(parts) != 2 || parts[0] != "Bearer" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token format"})
+			c.Abort()
+			return
+		}
+
+		claims, err := utils.ValidateJWT(parts[1])
+		if err != nil {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid token"})
+			c.Abort()
+			return
+		}
+
+		// Setear información del usuario en el contexto
+		c.Set("user_id", claims.UserID)
+		c.Set("user_role", claims.Role)
+
+		c.Next()
+	}
+}

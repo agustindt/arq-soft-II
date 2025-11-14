@@ -1,27 +1,10 @@
-services:
-  # Frontend React
-  frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
-    environment:
-      - REACT_APP_USERS_API_URL=http://localhost:8081
-      - REACT_APP_ACTIVITIES_API_URL=http://localhost:8082
-      - REACT_APP_SEARCH_API_URL=http://localhost:8083
-    depends_on:
-      - users-api
-      - activities-api
-      - search-api
-    networks:
-      - app-network
 
-  # API de usuarios
+services:
+  # 👤 API de Usuarios
   users-api:
     build:
-      context: ./backend/users-api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./backend/users-api/Dockerfile
     ports:
       - "8081:8081"
     environment:
@@ -31,25 +14,39 @@ services:
       - DB_USER=root
       - DB_PASSWORD=rootpassword
       - DB_NAME=users_db
-      - JWT_SECRET=your-super-secret-jwt-key-here
+      - JWT_SECRET=z25yYAswKLAbrMWDVGg4HZuVS661GpqDgxR1B3hCcjDBvNffYfSxErxgiLVXAQoi5b9+6AVQZxcW9hW9QlFDDA==
     depends_on:
       mysql:
         condition: service_healthy
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/api/v1/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # API de actividades (entidad principal)
+  # 🏃 API de Actividades
   activities-api:
     build:
-      context: ./backend/activities-api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./backend/activities-api/Dockerfile
+    container_name: activities-api
+    restart: always
     ports:
       - "8082:8082"
     environment:
       - PORT=8082
-      - MONGO_URI=mongodb://mongo:27017/activities_db
+      - MONGO_URI=mongodb://mongo:27017
+      - MONGO_DB=activitiesdb
+      - MONGO_COLLECTION=activities
+      - RABBITMQ_USER=admin
+      - RABBITMQ_PASS=admin123
+      - RABBITMQ_HOST=rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_EXCHANGE=entity.events
       - USERS_API_URL=http://users-api:8081
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - JWT_SECRET=z25yYAswKLAbrMWDVGg4HZuVS661GpqDgxR1B3hCcjDBvNffYfSxErxgiLVXAQoi5b9+6AVQZxcW9hW9QlFDDA==
     depends_on:
       mongo:
         condition: service_started
@@ -59,12 +56,17 @@ services:
         condition: service_started
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:8082/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # API de búsqueda
+  # 🔎 API de Búsqueda (Search API)
   search-api:
     build:
-      context: ./backend/search-api
-      dockerfile: Dockerfile
+      context: .
+      dockerfile: ./backend/search-api/Dockerfile
     ports:
       - "8083:8083"
     environment:
@@ -72,7 +74,7 @@ services:
       - SOLR_URL=http://solr:8983/solr
       - SOLR_CORE=activities
       - MEMCACHED_URL=memcached:11211
-      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672/
+      - RABBITMQ_URL=amqp://admin:admin123@rabbitmq:5672/
       - ACTIVITIES_API_URL=http://activities-api:8082
     depends_on:
       solr:
@@ -85,8 +87,13 @@ services:
         condition: service_started
     networks:
       - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
-  # Base de datos MySQL para usuarios
+  # 🗄️ Base de datos MySQL para usuarios
   mysql:
     image: mysql:8.0
     ports:
@@ -104,65 +111,119 @@ services:
     networks:
       - app-network
 
-  # Base de datos MongoDB para actividades
   mongo:
-    image: mongo:6.0
+    image: mongo:6
+    container_name: mongo
+    restart: always
     ports:
       - "27017:27017"
+    environment:
+      MONGO_INITDB_DATABASE: reservasdb
+    networks:
+      - app-network
     volumes:
       - mongo_data:/data/db
       - ./database/mongo/init.js:/docker-entrypoint-initdb.d/init.js
-    networks:
-      - app-network
 
-  # RabbitMQ para mensajería
   rabbitmq:
     image: rabbitmq:3-management
+    container_name: rabbitmq
+    restart: always
     ports:
       - "5672:5672"
       - "15672:15672"
     environment:
-      - RABBITMQ_DEFAULT_USER=guest
-      - RABBITMQ_DEFAULT_PASS=guest
-    volumes:
-      - rabbitmq_data:/var/lib/rabbitmq
-      - ./config/rabbitmq/definitions.json:/etc/rabbitmq/definitions.json
-      - ./config/rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
+      RABBITMQ_DEFAULT_USER: admin
+      RABBITMQ_DEFAULT_PASS: admin123
     healthcheck:
-      test: rabbitmq-diagnostics -q ping
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
       interval: 30s
       timeout: 30s
       retries: 3
     networks:
       - app-network
 
-  # Solr para búsqueda
+  reservations-service:
+    build:
+      context: .
+      dockerfile: ./backend/reservations-api/dockerfile
+    container_name: reservations-service
+    restart: always
+    depends_on:
+      mongo:
+        condition: service_started
+      rabbitmq:
+        condition: service_healthy
+      users-api:
+        condition: service_started
+    environment:
+      PORT: 8080
+      USERS_API_URL: http://users-api:8081
+      MONGO_DB: demo
+      MONGO_COLLECTION: reservas
+      MONGO_URI: mongodb://mongo:27017/reservasdb
+      RABBITMQ_HOST: rabbitmq
+      RABBITMQ_PORT: 5672
+      RABBITMQ_USER: admin
+      RABBITMQ_PASS: admin123
+      RABBITMQ_QUEUE_NAME: reservas
+      JWT_SECRET: z25yYAswKLAbrMWDVGg4HZuVS661GpqDgxR1B3hCcjDBvNffYfSxErxgiLVXAQoi5b9+6AVQZxcW9hW9QlFDDA==
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ⚛️ Frontend React
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: frontend
+    restart: always
+    ports:
+      - "3000:3000"
+    environment:
+      - REACT_APP_USERS_API_URL=http://localhost:8081
+      - REACT_APP_ACTIVITIES_API_URL=http://localhost:8082
+      - REACT_APP_SEARCH_API_URL=http://localhost:8083
+      - REACT_APP_RESERVATIONS_API_URL=http://localhost:8080
+    depends_on:
+      users-api:
+        condition: service_healthy
+      activities-api:
+        condition: service_healthy
+      search-api:
+        condition: service_healthy
+      reservations-service:
+        condition: service_healthy
+    networks:
+      - app-network
+
+  # 🔆 Solr (motor de búsqueda)
   solr:
     image: solr:9.4
     ports:
       - "8983:8983"
     volumes:
       - solr_data:/var/solr
-      - ./config/solr/activities:/opt/solr/server/solr/configsets/activities
+      # ✅ Ruta corregida: apunta al configset real con carpeta /conf/
+      - ./solr/activities:/opt/solr/server/solr/configsets/activities
     command: >
-      bash -c "
-        solr-precreate activities /opt/solr/server/solr/configsets/activities
-      "
+      bash -c "solr-precreate activities /opt/solr/server/solr/configsets/activities"
     healthcheck:
-      test:
-        [
-          "CMD",
-          "curl",
-          "-f",
-          "http://localhost:8983/solr/activities/admin/ping",
-        ]
+      test: ["CMD", "curl", "-f", "http://localhost:8983/solr/activities/admin/ping"]
       interval: 30s
       timeout: 10s
       retries: 5
     networks:
       - app-network
 
-  # Memcached para caché distribuida
+  # 💾 Memcached (caché distribuida)
   memcached:
     image: memcached:1.6-alpine
     ports:
@@ -171,12 +232,14 @@ services:
     networks:
       - app-network
 
+# 🧱 Volúmenes persistentes
 volumes:
   mysql_data:
   mongo_data:
   rabbitmq_data:
   solr_data:
 
+# 🌐 Red compartida entre microservicios
 networks:
   app-network:
     driver: bridge

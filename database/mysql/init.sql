@@ -10,7 +10,8 @@ CREATE TABLE IF NOT EXISTS users (
     first_name VARCHAR(50) NOT NULL,
     last_name VARCHAR(50) NOT NULL,
     password_hash VARCHAR(255) NOT NULL,
-    user_type ENUM('normal', 'admin') DEFAULT 'normal',
+    role VARCHAR(50) DEFAULT 'user',
+    is_active BOOLEAN DEFAULT true,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
@@ -18,9 +19,10 @@ CREATE TABLE IF NOT EXISTS users (
 -- Índices para optimización
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_username ON users(username);
-CREATE INDEX idx_users_type ON users(user_type);
+CREATE INDEX idx_users_role ON users(role);
 
 -- Usuario administrador por defecto
-INSERT INTO users (username, email, first_name, last_name, password_hash, user_type) 
-VALUES ('admin', 'admin@example.com', 'Admin', 'User', '$2a$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', 'admin')
+-- Contraseña: password
+INSERT INTO users (username, email, first_name, last_name, password_hash, role)
+VALUES ('admin', 'admin@example.com', 'Admin', 'User', '$2a$10$dyX0fZvCTxYIuntXCbAtO.PMpEkc94lTAF30H7r/Y1H9MTos5wZP2', 'admin')
 ON DUPLICATE KEY UPDATE username=username;

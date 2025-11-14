@@ -228,6 +228,9 @@ dist/
 .vscode/
 .idea/
 
+# Editor history files (VS Code, etc.)
+.history/
+
 # Certificate files
 *.pem
 *.key
@@ -285,3 +288,14 @@ dump.rdb
 # Local development
 dev-data/
 test-data/
+
+# VS Code history extension
+.history/
+
+# Avatar uploads (development)
+backend/*/uploads/
+uploads/
+
+# Environment files (keep example files)
+.env*
+!environment.example

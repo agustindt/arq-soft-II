@@ -1,0 +1,7 @@
+# Sports-related synonyms
+football,soccer
+cycling,biking
+running,jogging
+swimming,pool
+tennis,racquet
+basketball,hoops
