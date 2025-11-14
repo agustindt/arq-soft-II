@@ -27,6 +27,7 @@ import {
 import { useAuth } from "../../contexts/AuthContext";
 import { userService, authService } from "../../services/authService";
 import { activitiesService } from "../../services/activitiesService";
+import { formatDate } from "../../utils/dateUtils";
 import { DashboardStats, ApiStatus, User, Activity } from "../../types";
 import { useNavigate } from "react-router-dom";
 
@@ -82,14 +83,6 @@ function Dashboard(): JSX.Element {
     } finally {
       setLoading(false);
     }
-  };
-
-  const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
   };
 
   if (loading) {

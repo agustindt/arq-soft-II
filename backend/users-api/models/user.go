@@ -179,6 +179,7 @@ type UserResponse struct {
 type PublicUserResponse struct {
 	ID           uint        `json:"id"`
 	Username     string      `json:"username"`
+	Email        string      `json:"email"`
 	FirstName    string      `json:"first_name"`
 	LastName     string      `json:"last_name"`
 	AvatarURL    *string     `json:"avatar_url"`
@@ -186,6 +187,7 @@ type PublicUserResponse struct {
 	Location     *string     `json:"location"`
 	SocialLinks  SocialLinks `json:"social_links"`
 	FitnessLevel *string     `json:"fitness_level"`
+	Role         string      `json:"role"`
 	CreatedAt    time.Time   `json:"created_at"`
 }
 
@@ -240,6 +242,7 @@ func (u *User) ToPublicResponse() PublicUserResponse {
 	return PublicUserResponse{
 		ID:           u.ID,
 		Username:     u.Username,
+		Email:        u.Email,
 		FirstName:    u.FirstName,
 		LastName:     u.LastName,
 		AvatarURL:    u.AvatarURL,
@@ -247,6 +250,7 @@ func (u *User) ToPublicResponse() PublicUserResponse {
 		Location:     u.Location,
 		SocialLinks:  u.SocialLinks,
 		FitnessLevel: u.FitnessLevel,
+		Role:         u.Role,
 		CreatedAt:    u.CreatedAt,
 	}
 }

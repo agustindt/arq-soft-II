@@ -15,26 +15,26 @@ USE users_db;
 --   moderator@test.com -> Mod789!
 --   admin@test.com -> Admin000!
 
-INSERT INTO users (username, email, first_name, last_name, password_hash, user_type) VALUES
+INSERT INTO users (username, email, first_name, last_name, password_hash, role) VALUES
 -- Usuario normal 1
 ('johndoe', 'john.doe@test.com', 'John', 'Doe',
- '$2a$10$N9qo8uLOickgx2ZMRZoMye', 'normal'),
+ '$2a$10$N9qo8uLOickgx2ZMRZoMye', 'user'),
 
 -- Usuario normal 2
 ('janesmth', 'jane.smith@test.com', 'Jane', 'Smith',
- '$2a$10$N9qo8uLOickgx2ZMRZoMye', 'normal'),
+ '$2a$10$N9qo8uLOickgx2ZMRZoMye', 'user'),
 
 -- Usuario normal 3 (activo en deportes)
 ('sportsfan', 'sports.fan@test.com', 'Carlos', 'Rodriguez',
- '$2a$10$N9qo8uLOickgx2ZMRZoMye', 'normal'),
+ '$2a$10$N9qo8uLOickgx2ZMRZoMye', 'user'),
 
 -- Usuario normal 4
 ('yogalover', 'yoga.lover@test.com', 'Maria', 'Garcia',
- '$2a$10$N9qo8uLOickgx2ZMRZoMye', 'normal'),
+ '$2a$10$N9qo8uLOickgx2ZMRZoMye', 'user'),
 
 -- Usuario normal 5
 ('runner', 'runner@test.com', 'Pedro', 'Martinez',
- '$2a$10$N9qo8uLOickgx2ZMRZoMye', 'normal'),
+ '$2a$10$N9qo8uLOickgx2ZMRZoMye', 'user'),
 
 -- Moderador
 ('moderator', 'moderator@test.com', 'Mod', 'Moderator',
@@ -51,7 +51,7 @@ SELECT
     username,
     email,
     CONCAT(first_name, ' ', last_name) as full_name,
-    user_type,
+    role,
     created_at
 FROM users
 WHERE email LIKE '%@test.com'
@@ -59,7 +59,7 @@ ORDER BY created_at DESC;
 
 -- Estadísticas
 SELECT
-    user_type,
+    role,
     COUNT(*) as total
 FROM users
-GROUP BY user_type;
+GROUP BY role;

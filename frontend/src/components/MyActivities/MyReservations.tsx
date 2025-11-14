@@ -35,6 +35,7 @@ import {
 } from "@mui/icons-material";
 import { reservationsService } from "../../services/reservationsService";
 import { activitiesService } from "../../services/activitiesService";
+import { formatDateTime } from "../../utils/dateUtils";
 import { Reservation, Activity } from "../../types";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -119,16 +120,6 @@ function MyReservations(): JSX.Element {
     return colors[status] || "default";
   };
 
-  const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
-  };
-
   if (loading) {
     return (
       <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
@@ -203,7 +194,7 @@ function MyReservations(): JSX.Element {
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                           <CalendarIcon fontSize="small" color="action" />
                           <Typography variant="body2">
-                            <strong>Date:</strong> {formatDate(reservation.date)}
+                            <strong>Date:</strong> {formatDateTime(reservation.date)}
                           </Typography>
                         </Box>
 
@@ -235,7 +226,7 @@ function MyReservations(): JSX.Element {
 
                         <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                           <Typography variant="caption" color="textSecondary">
-                            Reserved on: {formatDate(reservation.created_at)}
+                            Reserved on: {formatDateTime(reservation.created_at)}
                           </Typography>
                         </Box>
                       </Stack>
@@ -294,7 +285,7 @@ function MyReservations(): JSX.Element {
                 Activity ID: {selectedReservation.actividad}
               </Typography>
               <Typography variant="body2" color="textSecondary">
-                Date: {formatDate(selectedReservation.date)}
+                Date: {formatDateTime(selectedReservation.date)}
               </Typography>
             </Box>
           )}

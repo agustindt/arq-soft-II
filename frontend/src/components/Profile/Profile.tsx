@@ -23,6 +23,7 @@ import {
   Cancel as CancelIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../../contexts/AuthContext";
+import { formatDateTime } from "../../utils/dateUtils";
 import {
   FormErrors,
   Message,
@@ -167,16 +168,6 @@ function Profile(): JSX.Element {
       last_name: user?.last_name || "",
     });
     setEditMode(false);
-  };
-
-  const formatDate = (dateString: string): string => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-    });
   };
 
   return (
@@ -331,7 +322,7 @@ function Profile(): JSX.Element {
                 Member since
               </Typography>
               <Typography variant="body2">
-                {formatDate(user?.created_at || "")}
+                {formatDateTime(user?.created_at || "")}
               </Typography>
             </CardContent>
           </Card>

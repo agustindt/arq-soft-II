@@ -66,8 +66,8 @@ func main() {
 	// Router
 	// GET /Reservas - listar todos los Reservas
 	router.GET("/reservas", ReservaController.GetReservas)
-	// POST /Reservas - crear nuevo Reserva
-	router.POST("/reservas", middleware.AdminOnly(usersAPI), ReservaController.CreateReserva)
+	// POST /Reservas - crear nuevo Reserva (cualquier usuario autenticado)
+	router.POST("/reservas", middleware.AuthRequired(usersAPI), ReservaController.CreateReserva)
 
 	// GET /Reservas/:id - obtener Reserva por ID
 	router.GET("/reservas/:id", ReservaController.GetReservaByID)
