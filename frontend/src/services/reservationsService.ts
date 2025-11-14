@@ -36,9 +36,14 @@ reservationsApi.interceptors.request.use(
 // Reservations Service
 export const reservationsService = {
   // Get all reservations (public, but filtered by user in backend)
-  async getReservations(): Promise<Reservation[]> {
+  // scope: 'mine' = only current user's reservations (even for admins)
+  //        'all' = all reservations (only for admins)
+  //        undefined = default behavior (admins see all, users see own)
+  async getReservations(scope?: 'mine' | 'all'): Promise<Reservation[]> {
+    const params = scope ? { scope } : {};
     const response = await reservationsApi.get<ReservationsResponse>(
-      "/reservas"
+      "/reservas",
+      { params }
     );
     return response.data.reservas;
   },

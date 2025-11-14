@@ -41,7 +41,8 @@ import { useAuth } from "../../contexts/AuthContext";
 import { useApiStatus } from "../../hooks/useApiStatus";
 
 interface ReservationWithActivity extends Reservation {
-  activity?: Activity;
+  activity?: Activity | null;
+  activityDeleted?: boolean;
 }
 
 function MyReservations(): JSX.Element {
@@ -64,7 +65,9 @@ function MyReservations(): JSX.Element {
     setLoading(true);
     setError(null);
     try {
-      const reservas = await reservationsService.getReservations();
+      // Use 'mine' scope to always get only the current user's reservations
+      // This ensures admins see only their own reservations in "My Activities"
+      const reservas = await reservationsService.getReservations('mine');
       
       // Load activity details for each reservation
       const reservationsWithActivities = await Promise.all(
@@ -74,9 +77,14 @@ function MyReservations(): JSX.Element {
               reservation.actividad
             );
             return { ...reservation, activity };
-          } catch (err) {
+          } catch (err: any) {
             console.error(`Failed to load activity ${reservation.actividad}:`, err);
-            return reservation;
+            // If activity not found or inactive, mark it in the reservation
+            return { 
+              ...reservation, 
+              activity: null,
+              activityDeleted: true 
+            };
           }
         })
       );
@@ -183,9 +191,19 @@ function MyReservations(): JSX.Element {
                       mb: 2,
                     }}
                   >
-                    <Typography variant="h6">
-                      {reservation.activity?.name || `Activity ${reservation.actividad}`}
-                    </Typography>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="h6">
+                        {reservation.activity?.name || `Activity ${reservation.actividad}`}
+                      </Typography>
+                      {reservation.activityDeleted && (
+                        <Chip
+                          label="Activity Cancelled"
+                          color="error"
+                          size="small"
+                          sx={{ mt: 1 }}
+                        />
+                      )}
+                    </Box>
                     <Chip
                       label={reservation.status}
                       color={getStatusColor(reservation.status)}
@@ -247,8 +265,13 @@ function MyReservations(): JSX.Element {
                   )}
 
                   {!reservation.activity && (
-                    <Alert severity="info" sx={{ mt: 2 }}>
-                      Activity details not available
+                    <Alert 
+                      severity={reservation.activityDeleted ? "warning" : "info"} 
+                      sx={{ mt: 2 }}
+                    >
+                      {reservation.activityDeleted 
+                        ? "⚠️ This activity has been cancelled or removed by the administrator" 
+                        : "Activity details not available"}
                     </Alert>
                   )}
 

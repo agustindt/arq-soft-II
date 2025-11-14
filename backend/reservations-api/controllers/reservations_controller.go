@@ -53,6 +53,12 @@ func (c *ReservasController) GetReservas(ctx *gin.Context) {
 		return
 	}
 
+	// Obtener el parámetro de consulta 'scope' (opcional)
+	// scope=mine -> siempre retorna solo las reservas del usuario actual (incluso si es admin)
+	// scope=all -> retorna todas las reservas (solo para admins)
+	// sin scope -> comportamiento por defecto (admins ven todo, usuarios ven solo las suyas)
+	scope := ctx.Query("scope")
+
 	var reservas []domain.Reserva
 	var err error
 
@@ -64,11 +70,8 @@ func (c *ReservasController) GetReservas(ctx *gin.Context) {
 		}
 	}
 
-	// Si es admin, retornar todas las reservas
-	if isAdmin {
-		reservas, err = c.service.List(ctx.Request.Context())
-	} else {
-		// Si es usuario normal, retornar solo sus reservas
+	// Si scope=mine, forzar a retornar solo las reservas del usuario actual
+	if scope == "mine" {
 		if uid, ok := userID.(uint); ok {
 			reservas, err = c.service.ListByUserID(ctx.Request.Context(), int(uid))
 		} else {
@@ -76,6 +79,22 @@ func (c *ReservasController) GetReservas(ctx *gin.Context) {
 				"error": "Invalid user ID format",
 			})
 			return
+		}
+	} else {
+		// Comportamiento por defecto
+		// Si es admin, retornar todas las reservas
+		if isAdmin {
+			reservas, err = c.service.List(ctx.Request.Context())
+		} else {
+			// Si es usuario normal, retornar solo sus reservas
+			if uid, ok := userID.(uint); ok {
+				reservas, err = c.service.ListByUserID(ctx.Request.Context(), int(uid))
+			} else {
+				ctx.JSON(http.StatusInternalServerError, gin.H{
+					"error": "Invalid user ID format",
+				})
+				return
+			}
 		}
 	}
 

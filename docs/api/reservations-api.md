@@ -93,7 +93,20 @@ List reservations.
 
 **Authorization:**
 - Regular users see only their own reservations
-- Admins see all reservations
+- Admins see all reservations by default
+
+**Query Parameters:**
+- `scope` (optional): Controls which reservations are returned
+  - `mine`: Returns only the current user's reservations (even for admins). Useful for "My Activities" views.
+  - `all`: Returns all reservations (admin only). Default behavior for admins when scope is not specified.
+  - Not specified: Default behavior - admins see all reservations, regular users see only their own.
+
+**Example:**
+```
+GET /reservas?scope=mine  # Always returns only current user's reservations
+GET /reservas?scope=all   # Returns all reservations (admin only)
+GET /reservas             # Admins see all, users see their own
+```
 
 **Response (200 OK):**
 ```json
