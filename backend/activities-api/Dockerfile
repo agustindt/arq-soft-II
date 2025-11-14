@@ -2,16 +2,15 @@ FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
-# Copiar go.mod y go.sum desde la raíz del proyecto
-COPY ../../go.mod ../../go.sum ./
+# Copiar go.mod y go.sum desde el context (raíz del proyecto)
+COPY go.mod go.sum ./
 RUN go mod download
 
-# Copiar todo el código fuente
+# Copiar todo el código fuente desde el context
 COPY . .
 
-# Construir el binario
-WORKDIR /app/backend/activities-api
-RUN CGO_ENABLED=0 GOOS=linux go build -o /main .
+# Construir el binario desde la raíz del módulo
+RUN CGO_ENABLED=0 GOOS=linux go build -o /main ./backend/activities-api
 
 # Imagen final minimal
 FROM alpine:latest

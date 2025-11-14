@@ -17,6 +17,7 @@ type ActivitiesRepository interface {
 	GetByID(ctx context.Context, id string) (domain.Activity, error)
 	Update(ctx context.Context, id string, activity domain.Activity) (domain.Activity, error)
 	Delete(ctx context.Context, id string) error
+	HardDelete(ctx context.Context, id string) error
 	ToggleActive(ctx context.Context, id string) (domain.Activity, error)
 	GetByCategory(ctx context.Context, category string) ([]domain.Activity, error)
 }
@@ -214,11 +215,41 @@ func (s *ActivitiesServiceImpl) Delete(ctx context.Context, id string) error {
 		return fmt.Errorf("error fetching activity: %w", err)
 	}
 
-	fmt.Printf("🗑️  Deleting activity: id=%s, name=%s\n", existing.ID, existing.Name)
+	fmt.Printf("🗑️  Soft deleting activity: id=%s, name=%s\n", existing.ID, existing.Name)
 
 	// Soft delete
 	if err := s.repository.Delete(ctx, id); err != nil {
 		return fmt.Errorf("error deleting activity in repository: %w", err)
+	}
+
+	// Publicar evento de eliminación de forma asíncrona
+	go func(id string) {
+		pubCtx, pubCancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer pubCancel()
+		if err := s.publisher.Publish(pubCtx, "deleted", id); err != nil {
+			fmt.Printf("⚠️  Warning: publish failed for activity %s: %v\n", id, err)
+		}
+	}(id)
+
+	return nil
+}
+
+// HardDelete elimina permanentemente una actividad de la base de datos
+func (s *ActivitiesServiceImpl) HardDelete(ctx context.Context, id string) error {
+	// Fetch existing para validar
+	tasksCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+	defer cancel()
+
+	existing, err := s.repository.GetByID(tasksCtx, id)
+	if err != nil {
+		return fmt.Errorf("error fetching activity: %w", err)
+	}
+
+	fmt.Printf("🗑️  PERMANENTLY deleting activity: id=%s, name=%s\n", existing.ID, existing.Name)
+
+	// Hard delete - eliminación permanente
+	if err := s.repository.HardDelete(ctx, id); err != nil {
+		return fmt.Errorf("error hard deleting activity in repository: %w", err)
 	}
 
 	// Publicar evento de eliminación de forma asíncrona

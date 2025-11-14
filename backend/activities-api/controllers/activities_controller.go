@@ -16,6 +16,7 @@ type ActivitiesService interface {
 	GetByID(ctx context.Context, id string) (domain.Activity, error)
 	Update(ctx context.Context, id string, activity domain.Activity) (domain.Activity, error)
 	Delete(ctx context.Context, id string) error
+	HardDelete(ctx context.Context, id string) error
 	ToggleActive(ctx context.Context, id string) (domain.Activity, error)
 	GetByCategory(ctx context.Context, category string) ([]domain.Activity, error)
 }
@@ -191,7 +192,8 @@ func (c *ActivitiesController) DeleteActivity(ctx *gin.Context) {
 		return
 	}
 
-	err := c.service.Delete(ctx.Request.Context(), id)
+	// Hard delete - eliminación permanente
+	err := c.service.HardDelete(ctx.Request.Context(), id)
 	if err != nil {
 		if strings.Contains(err.Error(), "not found") {
 			ctx.JSON(http.StatusNotFound, gin.H{
@@ -208,7 +210,7 @@ func (c *ActivitiesController) DeleteActivity(ctx *gin.Context) {
 	}
 
 	ctx.JSON(http.StatusOK, gin.H{
-		"message": "Activity deleted successfully",
+		"message": "Activity permanently deleted",
 	})
 }
 
