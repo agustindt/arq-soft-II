@@ -7,6 +7,7 @@ import (
 	"io"
 	"net/http"
 	"net/url"
+	"strings"
 	"time"
 )
 
@@ -98,8 +99,10 @@ func (s *SolrClient) Search(query string, filters map[string]interface{}) (*Solr
 	if query == "" || query == "*" {
 		params.Set("q", "*:*") // búsqueda de todos los documentos
 	} else {
-		// Búsqueda en múltiples campos
-		params.Set("q", query)
+		// Búsqueda con wildcards: convertir a minúsculas y agregar wildcard al final
+		// Los campos text_general en Solr ya convierten a lowercase
+		wildcardQuery := strings.ToLower(query) + "*"
+		params.Set("q", wildcardQuery)
 		params.Set("defType", "edismax")
 		params.Set("qf", "name^3 description^2 location category") // boost en name
 	}
