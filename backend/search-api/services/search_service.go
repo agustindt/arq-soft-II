@@ -17,10 +17,10 @@ type SearchService struct {
 }
 
 type SearchResult struct {
-	Query      string                   `json:"query"`
-	Results    []clients.SolrDocument   `json:"results"`
-	TotalFound int                      `json:"total_found"`
-	Timestamp  string                   `json:"timestamp"`
+	Query      string                 `json:"query"`
+	Results    []clients.SolrDocument `json:"results"`
+	TotalFound int                    `json:"total_found"`
+	Timestamp  string                 `json:"timestamp"`
 }
 
 func NewSearchService(c *cache.Cache, solr *clients.SolrClient) *SearchService {

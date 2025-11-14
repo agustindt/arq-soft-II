@@ -37,9 +37,9 @@ type SolrResponse struct {
 		QTime  int `json:"QTime"`
 	} `json:"responseHeader"`
 	Response struct {
-		NumFound int              `json:"numFound"`
-		Start    int              `json:"start"`
-		Docs     []SolrDocument   `json:"docs"`
+		NumFound int            `json:"numFound"`
+		Start    int            `json:"start"`
+		Docs     []SolrDocument `json:"docs"`
 	} `json:"response"`
 }
 

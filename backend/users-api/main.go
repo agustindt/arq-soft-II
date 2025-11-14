@@ -1,3 +1,23 @@
+// Package main implements the Users API microservice.
+//
+// The Users API is responsible for user authentication, authorization, and profile management.
+// It provides JWT-based authentication with role-based access control (RBAC) supporting
+// hierarchical roles: user, moderator, admin, super_admin, and root.
+//
+// Key Features:
+//   - User registration and login with bcrypt password hashing
+//   - JWT token generation with role claims for efficient authorization
+//   - Extended user profiles with sports-specific fields
+//   - Avatar upload and management
+//   - Public and private profile data separation
+//   - Admin user management (create, update roles/status, view stats)
+//   - Root user capabilities (user deletion)
+//
+// Database: MySQL 8.0 with GORM
+// Port: 8081
+// API Version: 2.1.0
+//
+// For complete API documentation, see docs/api/users-api.md
 package main
 
 import (

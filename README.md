@@ -22,38 +22,62 @@
 
 ### Microservices Architecture
 
-```mermaid
-graph TB
-    A[React Frontend<br/>TypeScript + Material-UI] --> B[Nginx<br/>Port 3000]
-    B --> C[Users API<br/>Go + Gin + JWT<br/>Port 8081]
-    B --> D[Activities API<br/>Go + Gin<br/>Port 8082]
-    B --> E[Search API<br/>Go + Solr<br/>Port 8083]
-    
-    C --> F[MySQL<br/>Port 3306]
-    D --> G[MongoDB<br/>Port 27017]
-    E --> H[Apache Solr<br/>Port 8983]
-    
-    C --> I[Memcached<br/>Port 11211]
-    D --> I
-    E --> I
-    
-    D --> J[RabbitMQ<br/>Port 5672]
-    E --> J
+This platform follows a microservices architecture with event-driven communication using RabbitMQ and a distributed caching layer with Memcached.
+
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                        React Frontend (Port 3000)                        │
+│                   TypeScript + Material-UI + Nginx                       │
+└───────────────┬─────────────────┬──────────────┬──────────────────────┘
+                │                 │              │               │
+    ┌───────────▼─────┐  ┌────────▼───────┐  ┌──▼─────────┐  ┌▼──────────────┐
+    │  Users API      │  │ Activities API │  │ Search API │  │ Reservations  │
+    │  (Port 8081)    │  │  (Port 8082)   │  │(Port 8083) │  │ API (8080)    │
+    │  Go + Gin +JWT  │  │  Go + Gin      │  │Go+Gin+Solr │  │  Go + Gin     │
+    └────────┬────────┘  └────────┬───────┘  └─────┬──────┘  └───────┬───────┘
+             │                    │                 │                  │
+      ┌──────▼─────┐      ┌──────▼───────┐  ┌─────▼─────────┐ ┌─────▼────────┐
+      │   MySQL    │      │   MongoDB    │  │  Apache Solr  │ │   MongoDB    │
+      │ (Port 3307)│      │ (Port 27017) │  │ (Port 8983)   │ │ (Port 27017) │
+      └────────────┘      └──────────────┘  └───────────────┘ └──────────────┘
+             │                    │                 │                  │
+             └────────────────────┼─────────────────┼──────────────────┘
+                                  │                 │
+                    ┌─────────────▼─────────────────▼─────────────┐
+                    │           Memcached (Port 11211)            │
+                    │              Distributed Cache               │
+                    └─────────────────────────────────────────────┘
+                                  │
+                    ┌─────────────▼─────────────────┐
+                    │    RabbitMQ (Port 5672)       │
+                    │    Message Queue + Events     │
+                    │    Management UI: 15672       │
+                    └───────────────────────────────┘
 ```
 
 ### Services Overview
 
 | Service | Technology | Port | Database | Description |
 |---------|-----------|------|----------|-------------|
-| **Frontend** | React + TypeScript | 3000 | - | User interface with Material-UI |
-| **Users API** | Go + Gin + GORM | 8081 | MySQL | Authentication, user profiles, roles |
-| **Activities API** | Go + Gin | 8082 | MongoDB | Sports activities management |
-| **Search API** | Go + Gin | 8083 | Apache Solr | Full-text search engine |
-| **MySQL** | MySQL 8.0 | 3306 | - | User data, profiles, authentication |
-| **MongoDB** | MongoDB 7.0 | 27017 | - | Activities, events, sports data |
-| **Apache Solr** | Solr 9.4 | 8983 | - | Search indexing and querying |
-| **Memcached** | Memcached | 11211 | - | Caching layer |
-| **RabbitMQ** | RabbitMQ | 5672 | - | Message queue for async tasks |
+| **Frontend** | React + TypeScript | 3000 | - | User interface with Material-UI components |
+| **Users API** | Go + Gin + GORM | 8081 | MySQL | Authentication (JWT), user profiles, role-based access control |
+| **Activities API** | Go + Gin + MongoDB Driver | 8082 | MongoDB | Sports activities CRUD, event publishing to RabbitMQ |
+| **Search API** | Go + Gin + Solr | 8083 | Apache Solr | Full-text search, event consumer, caching layer |
+| **Reservations API** | Go + Gin + MongoDB Driver | 8080 | MongoDB | Activity reservations, booking management |
+| **MySQL** | MySQL 8.0 | 3307 | - | Relational database for user data, profiles, authentication |
+| **MongoDB** | MongoDB 6.0 | 27017 | - | Document database for activities, reservations |
+| **Apache Solr** | Solr 9.4 | 8983 | - | Enterprise search platform for activity indexing |
+| **Memcached** | Memcached 1.6 | 11211 | - | In-memory caching for search results and queries |
+| **RabbitMQ** | RabbitMQ 3 + Management | 5672, 15672 | - | Message broker for event-driven architecture |
+
+### Key Architectural Patterns
+
+- **Microservices**: Independent, loosely-coupled services
+- **Event-Driven**: RabbitMQ for asynchronous communication between services
+- **CQRS**: Separate read (Search API) and write (Activities API) concerns
+- **DAO Pattern**: Data Access Objects for clean database abstraction
+- **JWT Authentication**: Stateless token-based auth with role claims
+- **API Gateway Pattern**: Frontend as single entry point for client requests
 
 ## 🚀 Quick Start
 
@@ -87,9 +111,12 @@ docker-compose up --build
 
 🎉 **That's it!** The platform will be available at:
 - **Frontend**: http://localhost:3000
-- **Users API**: http://localhost:8081
-- **Activities API**: http://localhost:8082
-- **Search API**: http://localhost:8083
+- **Users API**: http://localhost:8081/api/v1/health
+- **Activities API**: http://localhost:8082/healthz
+- **Search API**: http://localhost:8083/health
+- **Reservations API**: http://localhost:8080/healthz
+- **RabbitMQ Management**: http://localhost:15672 (admin/admin123)
+- **Solr Admin**: http://localhost:8983/solr
 
 ## 🐳 Docker Setup
 
@@ -412,43 +439,110 @@ See `database/mysql/seed.sql` and `database/mongo/seed.js` for details.
 
 ## 📡 API Endpoints
 
+For complete API documentation, see [docs/api/](./docs/api/):
+- [Users API Documentation](./docs/api/users-api.md)
+- [Activities API Documentation](./docs/api/activities-api.md)
+- [Search API Documentation](./docs/api/search-api.md)
+- [Reservations API Documentation](./docs/api/reservations-api.md)
+
 ### Users API (Port 8081)
 
 #### Authentication Endpoints
 ```bash
 POST   /api/v1/auth/register     # User registration
-POST   /api/v1/auth/login        # User login
+POST   /api/v1/auth/login        # User login (returns JWT with role claim)
 POST   /api/v1/auth/refresh      # Refresh JWT token
 ```
 
-#### Profile Endpoints (🔒 Protected)
+#### Profile Endpoints (🔒 Protected - Requires JWT)
 ```bash
 GET    /api/v1/profile           # Get user profile
-PUT    /api/v1/profile           # Update profile
+PUT    /api/v1/profile           # Update profile (extended fields: bio, location, sports interests, etc.)
 PUT    /api/v1/profile/password  # Change password
-POST   /api/v1/profile/avatar    # Upload avatar
+POST   /api/v1/profile/avatar    # Upload avatar image
 DELETE /api/v1/profile/avatar    # Delete avatar
 ```
 
 #### Public User Endpoints
 ```bash
-GET    /api/v1/users             # List users (public profiles)
+GET    /api/v1/users             # List users (public profiles only)
 GET    /api/v1/users/:id         # Get user by ID (public profile)
 ```
 
 #### Admin Endpoints (🛡️ Admin Role Required)
 ```bash
-GET    /api/v1/admin/users       # List all users (full profiles)
+GET    /api/v1/admin/users       # List all users (full profiles, with filters)
 POST   /api/v1/admin/users       # Create new user
-PUT    /api/v1/admin/users/:id/role      # Update user role
-PUT    /api/v1/admin/users/:id/status    # Update user status
+PUT    /api/v1/admin/users/:id/role      # Update user role (user/moderator/admin/root)
+PUT    /api/v1/admin/users/:id/status    # Update user status (active/inactive)
 GET    /api/v1/admin/stats       # Get system statistics
 ```
 
 #### Root Endpoints (👑 Root Role Required)
 ```bash
-POST   /api/v1/admin/create-root # Create root user (special endpoint)
-DELETE /api/v1/admin/users/:id   # Delete user (root only)
+POST   /api/v1/admin/create-root # Create root user (requires secret key)
+DELETE /api/v1/admin/users/:id   # Delete user permanently (root only)
+```
+
+### Activities API (Port 8082)
+
+#### Public Endpoints
+```bash
+GET    /activities               # List active activities
+GET    /activities/:id           # Get activity by ID
+GET    /activities/category/:category  # Filter by category (football, yoga, running, etc.)
+```
+
+#### Admin Endpoints (🛡️ Admin Role Required)
+```bash
+GET    /activities/all           # List all activities (including inactive)
+POST   /activities               # Create new activity
+PUT    /activities/:id           # Update activity
+DELETE /activities/:id           # Delete activity (soft delete)
+PATCH  /activities/:id/toggle    # Toggle activity active status
+```
+
+#### Health Check
+```bash
+GET    /healthz                  # Service health check
+```
+
+### Search API (Port 8083)
+
+#### Search Endpoints
+```bash
+GET    /search?q=query           # Search activities (with caching)
+GET    /search?q=query&category=football  # Search with category filter
+GET    /search?q=query&difficulty=beginner  # Search with difficulty filter
+```
+
+#### Health Check
+```bash
+GET    /health                   # Service health check
+```
+
+### Reservations API (Port 8080)
+
+#### Public Endpoints
+```bash
+GET    /reservas                 # List all reservations
+GET    /reservas/:id             # Get reservation by ID
+```
+
+#### Protected Endpoints (🔒 Requires JWT)
+```bash
+POST   /reservas                 # Create new reservation
+```
+
+#### Admin Endpoints (🛡️ Admin Role Required)
+```bash
+PUT    /reservas/:id             # Update reservation
+DELETE /reservas/:id             # Delete reservation
+```
+
+#### Health Check
+```bash
+GET    /healthz                  # Service health check
 ```
 
 ### Example Requests

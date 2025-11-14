@@ -204,35 +204,6 @@ services:
     networks:
       - app-network
 
-  # # 🍃 Base de datos MongoDB para actividades
-  # mongo:
-  #   image: mongo:6.0
-  #   ports:
-  #     - "27017:27017"
-  #   volumes:
-  #     - mongo_data:/data/db
-  #     - ./database/mongo/init.js:/docker-entrypoint-initdb.d/init.js
-  #   networks:
-  #     - app-network
-
-  # # 🐇 RabbitMQ (mensajería)
-  # rabbitmq:
-  #   image: rabbitmq:3-management
-  #   container_name: rabbitmq
-  #   ports:
-  #     - "5672:5672"       # Puerto de comunicación
-  #     - "15672:15672"     # Dashboard web
-  #   environment:
-  #     RABBITMQ_DEFAULT_USER: admin
-  #     RABBITMQ_DEFAULT_PASS: admin123
-  #   healthcheck:
-  #     test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
-  #     interval: 30s
-  #     timeout: 30s
-  #     retries: 3
-  #   networks:
-  #     - app-network
-
   # 🔆 Solr (motor de búsqueda)
   solr:
     image: solr:9.4

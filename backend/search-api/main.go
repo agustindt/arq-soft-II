@@ -1,3 +1,29 @@
+// Package main implements the Search API microservice.
+//
+// The Search API provides full-text search capabilities for activities using Apache Solr.
+// It implements CQRS pattern as the read side, consuming events from Activities API via
+// RabbitMQ to keep the search index synchronized. It also includes a caching layer using
+// Memcached for improved query performance.
+//
+// Key Features:
+//   - Full-text search across activity name, description, location, and instructor
+//   - Multi-faceted filtering (category, difficulty, price range, location)
+//   - Two-level caching (Memcached + Solr internal caches)
+//   - Event-driven index synchronization via RabbitMQ
+//   - Pagination support for search results
+//   - Sub-10ms response times for cached queries
+//
+// Event Types Consumed:
+//   - activity.created: Index new activity in Solr
+//   - activity.updated: Re-index updated activity and invalidate cache
+//   - activity.deleted: Remove activity from Solr index and invalidate cache
+//
+// Search Engine: Apache Solr 9.4
+// Cache: Memcached (5-minute TTL)
+// Message Queue: RabbitMQ (consumer)
+// Port: 8083
+//
+// For complete API documentation, see docs/api/search-api.md
 package main
 
 import (

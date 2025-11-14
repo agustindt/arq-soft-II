@@ -1,3 +1,28 @@
+// Package main implements the Activities API microservice.
+//
+// The Activities API manages sports activities with full CRUD operations and event-driven
+// communication. It publishes events to RabbitMQ whenever activities are created, updated,
+// or deleted, enabling other services (like Search API) to stay synchronized.
+//
+// Key Features:
+//   - Activity CRUD operations (admin only for write operations)
+//   - MongoDB document storage for flexible activity schema
+//   - Event publishing to RabbitMQ for activity state changes
+//   - Public endpoints for listing and viewing activities
+//   - Category and status-based filtering
+//   - JWT validation with admin role requirement for mutations
+//   - Graceful shutdown with proper resource cleanup
+//
+// Event Types Published:
+//   - activity.created: When a new activity is created
+//   - activity.updated: When an activity is modified
+//   - activity.deleted: When an activity is soft-deleted
+//
+// Database: MongoDB 6.0
+// Message Queue: RabbitMQ (publisher)
+// Port: 8082
+//
+// For complete API documentation, see docs/api/activities-api.md
 package main
 
 import (
@@ -69,8 +94,8 @@ func main() {
 	// Endpoints públicos (sin autenticación)
 	public := router.Group("/activities")
 	{
-		public.GET("", activitiesController.GetActivities)                        // Listar activas
-		public.GET("/:id", activitiesController.GetActivityByID)                  // Obtener por ID
+		public.GET("", activitiesController.GetActivities)                              // Listar activas
+		public.GET("/:id", activitiesController.GetActivityByID)                        // Obtener por ID
 		public.GET("/category/:category", activitiesController.GetActivitiesByCategory) // Filtrar por categoría
 	}
 
@@ -78,10 +103,10 @@ func main() {
 	admin := router.Group("/activities")
 	admin.Use(middleware.AdminOnly(usersAPI))
 	{
-		admin.GET("/all", activitiesController.GetAllActivities)         // Listar todas (incluyendo inactivas)
-		admin.POST("", activitiesController.CreateActivity)              // Crear actividad
-		admin.PUT("/:id", activitiesController.UpdateActivity)           // Actualizar actividad
-		admin.DELETE("/:id", activitiesController.DeleteActivity)        // Eliminar actividad (soft delete)
+		admin.GET("/all", activitiesController.GetAllActivities)              // Listar todas (incluyendo inactivas)
+		admin.POST("", activitiesController.CreateActivity)                   // Crear actividad
+		admin.PUT("/:id", activitiesController.UpdateActivity)                // Actualizar actividad
+		admin.DELETE("/:id", activitiesController.DeleteActivity)             // Eliminar actividad (soft delete)
 		admin.PATCH("/:id/toggle", activitiesController.ToggleActiveActivity) // Activar/desactivar
 	}
 

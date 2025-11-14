@@ -1,3 +1,29 @@
+// Package main implements the Reservations API microservice.
+//
+// The Reservations API manages activity reservations and bookings. It provides endpoints
+// for creating, viewing, updating, and managing reservations with capacity validation
+// and status workflow management.
+//
+// Key Features:
+//   - Create reservations for activities (authenticated users)
+//   - Multi-user group reservations support
+//   - Capacity validation against activity max_capacity
+//   - Status workflow (pendiente → confirmada → cancelada)
+//   - Admin endpoints for reservation management
+//   - Integration with Activities API for capacity checks
+//   - JWT-based authentication and authorization
+//   - Graceful shutdown with proper resource cleanup
+//
+// Reservation Status Flow:
+//   - pendiente: Initial state, awaiting confirmation
+//   - confirmada: Confirmed reservation
+//   - cancelada: Cancelled reservation (terminal state)
+//
+// Database: MongoDB 6.0
+// Message Queue: RabbitMQ (optional, for future event publishing)
+// Port: 8080
+//
+// For complete API documentation, see docs/api/reservations-api.md
 package main
 
 import (
