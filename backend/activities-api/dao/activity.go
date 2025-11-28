@@ -1,7 +1,7 @@
-package dao
+﻿package dao
 
 import (
-	"arq-soft-II/backend/activities-api/domain"
+	"activities-api/domain"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"

@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse } from "axios";
+import axios, { AxiosInstance, AxiosResponse, AxiosError, AxiosRequestConfig } from "axios";
 import {
   LoginRequest,
   RegisterRequest,
@@ -11,10 +11,30 @@ import {
   UsersResponse,
   HealthResponse,
 } from "../types";
+import { isTokenExpired, isTokenExpiringSoon } from "../utils/jwtUtils";
 
 // Configuración base de Axios
 const API_BASE_URL =
   process.env.REACT_APP_API_URL || "http://localhost:8081/api/v1";
+
+// Flag para evitar múltiples refreshes simultáneos
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: any) => void;
+  reject: (reason?: any) => void;
+}> = [];
+
+const processQueue = (error: any = null, token: string | null = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve(token);
+    }
+  });
+
+  failedQueue = [];
+};
 
 // Crear instancia de axios con configuración base
 const api: AxiosInstance = axios.create({
@@ -24,13 +44,58 @@ const api: AxiosInstance = axios.create({
   },
 });
 
-// Interceptor para añadir token automáticamente
+// Interceptor para añadir token automáticamente y verificar expiración
 api.interceptors.request.use(
-  (config) => {
+  async (config: AxiosRequestConfig) => {
     const token = localStorage.getItem("token");
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
+
+    // Si no hay token, continuar sin autenticación
+    if (!token) {
+      return config;
     }
+
+    // Verificar si el token ha expirado completamente
+    if (isTokenExpired(token)) {
+      localStorage.removeItem("token");
+      window.location.href = "/login";
+      return Promise.reject(new Error("Token expired"));
+    }
+
+    // Si el token está próximo a expirar y no es una petición de refresh
+    if (isTokenExpiringSoon(token) && !config.url?.includes("/auth/refresh")) {
+      try {
+        // Intentar refrescar el token automáticamente
+        const response = await axios.post<ApiResponse<{ token: string }>>(
+          `${API_BASE_URL}/auth/refresh`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const newToken = response.data.data.token;
+        localStorage.setItem("token", newToken);
+
+        // Usar el nuevo token para esta petición
+        if (config.headers) {
+          config.headers.Authorization = `Bearer ${newToken}`;
+        }
+      } catch (error) {
+        console.error("Failed to refresh token:", error);
+        // Continuar con el token actual si el refresh falla
+      }
+    }
+
+    // Añadir el token a la petición
+    if (config.headers) {
+      const currentToken = localStorage.getItem("token");
+      if (currentToken) {
+        config.headers.Authorization = `Bearer ${currentToken}`;
+      }
+    }
+
     return config;
   },
   (error) => {
@@ -43,12 +108,79 @@ api.interceptors.response.use(
   (response: AxiosResponse) => {
     return response;
   },
-  (error) => {
-    // Si recibimos 401, eliminar token y redireccionar
-    if (error.response?.status === 401) {
-      localStorage.removeItem("token");
-      window.location.href = "/login";
+  async (error: AxiosError) => {
+    const originalRequest = error.config as AxiosRequestConfig & {
+      _retry?: boolean;
+    };
+
+    // Si recibimos 401 y no es una petición de refresh o login
+    if (
+      error.response?.status === 401 &&
+      originalRequest &&
+      !originalRequest._retry &&
+      !originalRequest.url?.includes("/auth/login") &&
+      !originalRequest.url?.includes("/auth/refresh")
+    ) {
+      if (isRefreshing) {
+        // Si ya se está refrescando, agregar a la cola
+        return new Promise((resolve, reject) => {
+          failedQueue.push({ resolve, reject });
+        })
+          .then((token) => {
+            if (originalRequest.headers) {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+            }
+            return axios(originalRequest);
+          })
+          .catch((err) => {
+            return Promise.reject(err);
+          });
+      }
+
+      originalRequest._retry = true;
+      isRefreshing = true;
+
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+        return Promise.reject(error);
+      }
+
+      try {
+        // Intentar refrescar el token
+        const response = await axios.post<ApiResponse<{ token: string }>>(
+          `${API_BASE_URL}/auth/refresh`,
+          {},
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+          }
+        );
+
+        const newToken = response.data.data.token;
+        localStorage.setItem("token", newToken);
+
+        processQueue(null, newToken);
+
+        // Reintentar la petición original con el nuevo token
+        if (originalRequest.headers) {
+          originalRequest.headers.Authorization = `Bearer ${newToken}`;
+        }
+
+        return axios(originalRequest);
+      } catch (refreshError) {
+        processQueue(refreshError, null);
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
+      }
     }
+
     return Promise.reject(error);
   }
 );

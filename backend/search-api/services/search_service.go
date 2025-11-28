@@ -1,18 +1,18 @@
 package services
 
 import (
-	"arq-soft-II/backend/search-api/clients"
-	"arq-soft-II/backend/search-api/domain"
-	"arq-soft-II/config/cache"
 	"encoding/json"
 	"fmt"
 	"log"
+	"search-api/clients"
+	"search-api/domain"
+	"search-api/utils"
 	"strings"
 	"time"
 )
 
 type SearchService struct {
-	cache      *cache.Cache
+	cache      *utils.Cache
 	solrClient *clients.SolrClient
 }
 
@@ -23,29 +23,29 @@ type SearchResult struct {
 	Timestamp  string                 `json:"timestamp"`
 }
 
-func NewSearchService(c *cache.Cache, solr *clients.SolrClient) *SearchService {
+func NewSearchService(c *utils.Cache, solr *clients.SolrClient) *SearchService {
 	return &SearchService{
 		cache:      c,
 		solrClient: solr,
 	}
 }
 
-// Search realiza una búsqueda en Solr con cache
+// Search realiza una bﾃｺsqueda en Solr con cache
 func (s *SearchService) Search(query string, filters map[string]interface{}) (*SearchResult, error) {
 	// Generar key de cache basada en query y filtros
 	cacheKey := s.generateCacheKey(query, filters)
 
-	// Intentar obtener desde caché
+	// Intentar obtener desde cachﾃｩ
 	if data, err := s.cache.Get(cacheKey); err == nil {
 		var result SearchResult
 		if err := json.Unmarshal(data, &result); err == nil {
-			log.Printf("⚡ Cache hit: %s", query)
+			log.Printf("笞｡ Cache hit: %s", query)
 			return &result, nil
 		}
 	}
 
-	// Si no está en caché, buscar en Solr
-	log.Printf("🔍 Buscando en Solr: %s", query)
+	// Si no estﾃ｡ en cachﾃｩ, buscar en Solr
+	log.Printf("剥 Buscando en Solr: %s", query)
 
 	solrResp, err := s.solrClient.Search(query, filters)
 	if err != nil {
@@ -60,20 +60,20 @@ func (s *SearchService) Search(query string, filters map[string]interface{}) (*S
 		Timestamp:  time.Now().Format(time.RFC3339),
 	}
 
-	// Guardar en caché
+	// Guardar en cachﾃｩ
 	data, _ := json.Marshal(result)
 	if err := s.cache.Set(cacheKey, data, 30*time.Second); err != nil {
-		log.Printf("⚠️  No se pudo guardar en caché: %v", err)
+		log.Printf("笞・・ No se pudo guardar en cachﾃｩ: %v", err)
 	}
 
-	log.Printf("✅ Encontrados %d resultados para: %s", result.TotalFound, query)
+	log.Printf("笨・Encontrados %d resultados para: %s", result.TotalFound, query)
 
 	return &result, nil
 }
 
 // IndexActivity indexa una actividad en Solr
 func (s *SearchService) IndexActivity(activity domain.Activity) error {
-	log.Printf("📝 Indexando actividad en Solr: %s (ID: %s)", activity.Name, activity.ID)
+	log.Printf("統 Indexando actividad en Solr: %s (ID: %s)", activity.Name, activity.ID)
 
 	// Convertir Activity a SolrDocument
 	doc := clients.SolrDocument{
@@ -97,9 +97,9 @@ func (s *SearchService) IndexActivity(activity domain.Activity) error {
 		return fmt.Errorf("error indexing activity: %w", err)
 	}
 
-	log.Printf("✅ Actividad indexada correctamente: %s", activity.ID)
+	log.Printf("笨・Actividad indexada correctamente: %s", activity.ID)
 
-	// Invalidar caché relacionada
+	// Invalidar cachﾃｩ relacionada
 	s.invalidateCache()
 
 	return nil
@@ -107,30 +107,30 @@ func (s *SearchService) IndexActivity(activity domain.Activity) error {
 
 // DeleteActivity elimina una actividad de Solr
 func (s *SearchService) DeleteActivity(activityID string) error {
-	log.Printf("🗑️  Eliminando actividad de Solr: %s", activityID)
+	log.Printf("卵・・ Eliminando actividad de Solr: %s", activityID)
 
 	err := s.solrClient.Delete(activityID)
 	if err != nil {
 		return fmt.Errorf("error deleting activity from Solr: %w", err)
 	}
 
-	log.Printf("✅ Actividad eliminada de Solr: %s", activityID)
+	log.Printf("笨・Actividad eliminada de Solr: %s", activityID)
 
-	// Invalidar caché
+	// Invalidar cachﾃｩ
 	s.invalidateCache()
 
 	return nil
 }
 
-// UpdateActivity actualiza una actividad en Solr (básicamente es un re-index)
+// UpdateActivity actualiza una actividad en Solr (bﾃ｡sicamente es un re-index)
 func (s *SearchService) UpdateActivity(activity domain.Activity) error {
-	log.Printf("🔄 Actualizando actividad en Solr: %s (ID: %s)", activity.Name, activity.ID)
+	log.Printf("売 Actualizando actividad en Solr: %s (ID: %s)", activity.Name, activity.ID)
 
 	// Para Solr, actualizar es lo mismo que indexar (sobreescribe)
 	return s.IndexActivity(activity)
 }
 
-// generateCacheKey genera una key única para el cache basada en query y filtros
+// generateCacheKey genera una key ﾃｺnica para el cache basada en query y filtros
 func (s *SearchService) generateCacheKey(query string, filters map[string]interface{}) string {
 	parts := []string{"search", query}
 
@@ -153,9 +153,9 @@ func (s *SearchService) generateCacheKey(query string, filters map[string]interf
 	return strings.Join(parts, ":")
 }
 
-// invalidateCache limpia el cache (simplificado - en producción sería más selectivo)
+// invalidateCache limpia el cache (simplificado - en producciﾃｳn serﾃｭa mﾃ｡s selectivo)
 func (s *SearchService) invalidateCache() {
-	// En una implementación real, aquí invalidaríamos solo las keys relacionadas
+	// En una implementaciﾃｳn real, aquﾃｭ invalidarﾃｭamos solo las keys relacionadas
 	// Por ahora, dejamos que expiren naturalmente (30s TTL)
-	log.Println("⚠️  Cache invalidation: entries will expire naturally")
+	log.Println("笞・・ Cache invalidation: entries will expire naturally")
 }

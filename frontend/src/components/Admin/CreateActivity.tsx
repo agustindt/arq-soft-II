@@ -59,7 +59,7 @@ function CreateActivity(): JSX.Element {
   const [equipmentItem, setEquipmentItem] = useState<string>("");
 
   useEffect(() => {
-    if (user?.role !== "admin") {
+    if (user?.role !== "admin" && user?.role !== "root") {
       navigate("/dashboard");
       return;
     }

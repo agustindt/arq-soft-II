@@ -1,7 +1,7 @@
-package services
+﻿package services
 
 import (
-	"arq-soft-II/backend/activities-api/domain"
+	"activities-api/domain"
 	"context"
 	"errors"
 	"fmt"
@@ -116,7 +116,7 @@ func (s *ActivitiesServiceImpl) Create(ctx context.Context, activity domain.Acti
 		pubCtx, pubCancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer pubCancel()
 		if err := s.publisher.Publish(pubCtx, "created", id); err != nil {
-			fmt.Printf("⚠️  Warning: publish failed for activity %s: %v\n", id, err)
+			fmt.Printf("⚠ Warning: publish failed for activity %s: %v\n", id, err)
 		}
 	}(created.ID)
 
@@ -197,7 +197,7 @@ func (s *ActivitiesServiceImpl) Update(ctx context.Context, id string, activity 
 		pubCtx, pubCancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer pubCancel()
 		if err := s.publisher.Publish(pubCtx, "updated", id); err != nil {
-			fmt.Printf("⚠️  Warning: publish failed for activity %s: %v\n", id, err)
+			fmt.Printf("⚠ Warning: publish failed for activity %s: %v\n", id, err)
 		}
 	}(updated.ID)
 
@@ -215,7 +215,7 @@ func (s *ActivitiesServiceImpl) Delete(ctx context.Context, id string) error {
 		return fmt.Errorf("error fetching activity: %w", err)
 	}
 
-	fmt.Printf("🗑️  Soft deleting activity: id=%s, name=%s\n", existing.ID, existing.Name)
+	fmt.Printf("🗑️ Soft deleting activity: id=%s, name=%s\n", existing.ID, existing.Name)
 
 	// Soft delete
 	if err := s.repository.Delete(ctx, id); err != nil {
@@ -227,7 +227,7 @@ func (s *ActivitiesServiceImpl) Delete(ctx context.Context, id string) error {
 		pubCtx, pubCancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer pubCancel()
 		if err := s.publisher.Publish(pubCtx, "deleted", id); err != nil {
-			fmt.Printf("⚠️  Warning: publish failed for activity %s: %v\n", id, err)
+			fmt.Printf("⚠ Warning: publish failed for activity %s: %v\n", id, err)
 		}
 	}(id)
 
@@ -245,7 +245,7 @@ func (s *ActivitiesServiceImpl) HardDelete(ctx context.Context, id string) error
 		return fmt.Errorf("error fetching activity: %w", err)
 	}
 
-	fmt.Printf("🗑️  PERMANENTLY deleting activity: id=%s, name=%s\n", existing.ID, existing.Name)
+	fmt.Printf("🗑️ PERMANENTLY deleting activity: id=%s, name=%s\n", existing.ID, existing.Name)
 
 	// Hard delete - eliminación permanente
 	if err := s.repository.HardDelete(ctx, id); err != nil {
@@ -257,7 +257,7 @@ func (s *ActivitiesServiceImpl) HardDelete(ctx context.Context, id string) error
 		pubCtx, pubCancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer pubCancel()
 		if err := s.publisher.Publish(pubCtx, "deleted", id); err != nil {
-			fmt.Printf("⚠️  Warning: publish failed for activity %s: %v\n", id, err)
+			fmt.Printf("⚠ Warning: publish failed for activity %s: %v\n", id, err)
 		}
 	}(id)
 
@@ -277,7 +277,7 @@ func (s *ActivitiesServiceImpl) ToggleActive(ctx context.Context, id string) (do
 		defer pubCancel()
 		action := "updated"
 		if err := s.publisher.Publish(pubCtx, action, id); err != nil {
-			fmt.Printf("⚠️  Warning: publish failed for activity %s: %v\n", id, err)
+			fmt.Printf("⚠ Warning: publish failed for activity %s: %v\n", id, err)
 		}
 	}(toggled.ID)
 

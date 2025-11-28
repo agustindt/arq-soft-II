@@ -23,7 +23,9 @@ import {
   AdminDashboard,
   ActivityManagement,
   CreateActivity,
+  UserManagement,
 } from "./components/Admin";
+import RootDashboard from "./pages/RootDashboard";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
 // Tema personalizado moderno para la app
@@ -322,6 +324,24 @@ function AppContent(): JSX.Element {
             element={
               <ProtectedRoute>
                 <CreateActivity />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute>
+                <UserManagement />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Root Panel - Only for root users */}
+          <Route
+            path="/root"
+            element={
+              <ProtectedRoute>
+                <RootDashboard />
               </ProtectedRoute>
             }
           />

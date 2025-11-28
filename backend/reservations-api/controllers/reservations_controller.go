@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"arq-soft-II/backend/reservations-api/domain"
+	"reservations-api/domain"
 	"context"
 	"net/http"
 	"time"
@@ -69,7 +69,7 @@ func (c *ReservasController) GetReservas(ctx *gin.Context) {
 	isAdmin := false
 	if existsUserRole {
 		if role, ok := userRole.(string); ok {
-			isAdmin = role == "admin" || role == "super_admin" || role == "root"
+			isAdmin = role == "admin" || role == "root"
 		}
 	}
 
@@ -289,7 +289,7 @@ func (c *ReservasController) DeleteReserva(ctx *gin.Context) {
 	isAdmin := false
 	if existsUserRole {
 		if role, ok := userRole.(string); ok {
-			isAdmin = role == "admin" || role == "super_admin" || role == "root"
+			isAdmin = role == "admin" || role == "root"
 		}
 	}
 

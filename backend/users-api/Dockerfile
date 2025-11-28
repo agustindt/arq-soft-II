@@ -2,12 +2,13 @@ FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
-COPY ../../go.mod ../../go.sum ./
+# Copy go.mod and go.sum from users-api directory
+COPY backend/users-api/go.mod backend/users-api/go.sum ./
 RUN go mod download
 
-COPY . .
+# Copy the entire users-api directory
+COPY backend/users-api/ ./
 
-WORKDIR /app/backend/users-api
 RUN CGO_ENABLED=0 GOOS=linux go build -o /main .
 
 FROM alpine:latest

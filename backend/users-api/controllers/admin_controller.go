@@ -4,9 +4,9 @@ import (
 	"net/http"
 	"strconv"
 
-	"arq-soft-II/backend/users-api/middleware"
-	"arq-soft-II/backend/users-api/repositories"
-	"arq-soft-II/backend/users-api/services"
+	"users-api/middleware"
+	"users-api/repositories"
+	"users-api/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -36,11 +36,11 @@ type createUserRequest struct {
 	Password  string `json:"password" binding:"required,min=6"`
 	FirstName string `json:"first_name" binding:"required,min=2,max=100"`
 	LastName  string `json:"last_name" binding:"required,min=2,max=100"`
-	Role      string `json:"role" binding:"required,oneof=user moderator admin"`
+	Role      string `json:"role" binding:"required,oneof=user admin root"`
 }
 
 type updateUserRoleRequest struct {
-	Role string `json:"role" binding:"required,oneof=user moderator admin super_admin"`
+	Role string `json:"role" binding:"required,oneof=user admin root"`
 }
 
 type updateUserStatusRequest struct {
@@ -125,6 +125,27 @@ func (ctrl *AdminController) CreateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{
 			"error":   "Invalid request data",
 			"message": err.Error(),
+		})
+		return
+	}
+
+	// Obtener rol del actor
+	actorRole, _ := middleware.GetUserRole(c)
+
+	// Admin solo puede crear users
+	if actorRole == "admin" && req.Role != "user" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error":   "Insufficient permissions",
+			"message": "Admins can only create users with role 'user'",
+		})
+		return
+	}
+
+	// Solo root puede crear admin o root
+	if (req.Role == "admin" || req.Role == "root") && actorRole != "root" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error":   "Insufficient permissions",
+			"message": "Only root users can create admin or root accounts",
 		})
 		return
 	}
@@ -234,7 +255,25 @@ func (ctrl *AdminController) UpdateUserRole(c *gin.Context) {
 		return
 	}
 
-	role, _ := middleware.GetUserRole(c)
+	actorRole, _ := middleware.GetUserRole(c)
+
+	// Admin no puede cambiar roles
+	if actorRole == "admin" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error":   "Insufficient permissions",
+			"message": "Admins cannot modify user roles",
+		})
+		return
+	}
+
+	// Solo root puede cambiar roles
+	if actorRole != "root" {
+		c.JSON(http.StatusForbidden, gin.H{
+			"error":   "Insufficient permissions",
+			"message": "Only root users can modify roles",
+		})
+		return
+	}
 
 	updated, err := ctrl.adminService.UpdateUserRole(
 		c.Request.Context(),
@@ -242,7 +281,7 @@ func (ctrl *AdminController) UpdateUserRole(c *gin.Context) {
 			UserID: uint(userID),
 			Role:   req.Role,
 		},
-		role,
+		actorRole,
 	)
 	if err != nil {
 		switch err {
