@@ -1,4 +1,4 @@
-module users-api
+module arq-soft-II/backend/users-api
 
 go 1.24.3
 
