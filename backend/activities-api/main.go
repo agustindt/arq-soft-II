@@ -26,19 +26,16 @@
 package main
 
 import (
+	"context"
+	"log"
+	"time"
+
 	"activities-api/clients"
 	"activities-api/config"
 	"activities-api/controllers"
 	"activities-api/middleware"
 	"activities-api/repository"
 	"activities-api/services"
-	"context"
-	"log"
-	"net/http"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 
 	"github.com/gin-gonic/gin"
 )
@@ -68,7 +65,7 @@ func main() {
 		cfg.RabbitMQ.Port,
 		cfg.RabbitMQ.Exchange,
 		activitiesRepo, // necesario para obtener datos completos al publicar
-	)xq
+	)
 
 	// Crear cola de publicación con workers y retries
 	publishQueue := services.NewPublishQueue(rabbitClient, 200, 3, 200*time.Millisecond)
@@ -94,73 +91,26 @@ func main() {
 	// Endpoints públicos (sin autenticación)
 	public := router.Group("/activities")
 	{
-		public.GET("", activitiesController.GetActivities)                              // Listar activas
-		public.GET("/:id", activitiesController.GetActivityByID)                        // Obtener por ID
-		public.GET("/category/:category", activitiesController.GetActivitiesByCategory) // Filtrar por categoría
+		public.GET("/", activitiesController.GetActivities)
+		public.GET("/all", activitiesController.GetAllActivities)
+		public.GET("/category/:category", activitiesController.GetActivitiesByCategory)
+		public.GET("/:id", activitiesController.GetActivityByID)
 	}
 
-	// Endpoints protegidos (requieren admin role)
+	// Endpoints protegidos (requieren JWT Admin)
 	admin := router.Group("/activities")
 	admin.Use(middleware.AdminOnly(usersAPI))
 	{
-		admin.GET("/all", activitiesController.GetAllActivities)              // Listar todas (incluyendo inactivas)
-		admin.POST("", activitiesController.CreateActivity)                   // Crear actividad
-		admin.PUT("/:id", activitiesController.UpdateActivity)                // Actualizar actividad
-		admin.DELETE("/:id", activitiesController.DeleteActivity)             // Eliminar actividad (soft delete)
-		admin.PATCH("/:id/toggle", activitiesController.ToggleActiveActivity) // Activar/desactivar
+		admin.POST("/", activitiesController.CreateActivity)
+		admin.PUT("/:id", activitiesController.UpdateActivity)
+		admin.DELETE("/:id", activitiesController.DeleteActivity)
+		admin.DELETE("/:id/hard", activitiesController.HardDelete)
+		admin.PUT("/:id/toggle", activitiesController.ToggleActive)
 	}
 
-	// Configuración del server HTTP
-	srv := &http.Server{
-		Addr:              ":" + cfg.Port,
-		Handler:           router,
-		ReadHeaderTimeout: 10 * time.Second,
-		WriteTimeout:      10 * time.Second,
-		IdleTimeout:       60 * time.Second,
+	// Iniciar servidor
+	log.Println("🌐 Activities API listening on port 8082...")
+	if err := router.Run(":8082"); err != nil {
+		log.Fatalf("❌ Could not start server: %v", err)
 	}
-
-	log.Printf("✁EActivities API listening on port %s", cfg.Port)
-	log.Printf("📊 Health check: http://localhost:%s/healthz", cfg.Port)
-	log.Printf("🏃 Activities API: http://localhost:%s/activities", cfg.Port)
-	log.Printf("🗄�E�E MongoDB: %s/%s", cfg.Mongo.URI, cfg.Mongo.DB)
-	log.Printf("🐰 RabbitMQ: %s:%s (exchange: %s)", cfg.RabbitMQ.Host, cfg.RabbitMQ.Port, cfg.RabbitMQ.Exchange)
-
-	// Iniciar servidor en goroutine para poder manejar shutdown
-	go func() {
-		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("❁EServer error: %v", err)
-		}
-	}()
-
-	// Escuchar señales del sistema para graceful shutdown
-	quit := make(chan os.Signal, 1)
-	signal.Notify(quit, os.Interrupt, syscall.SIGTERM)
-	<-quit
-
-	log.Println("⏳ Shutting down server...")
-
-	// Tiempo máximo para completar shutdown
-	ctxShutdown, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
-
-	// Cerrar servidor HTTP
-	if err := srv.Shutdown(ctxShutdown); err != nil {
-		log.Printf("❁EServer shutdown failed: %v", err)
-	}
-
-	// Detener publish queue
-	if publishQueue != nil {
-		log.Println("⏳ Stopping publish queue...")
-		publishQueue.Stop()
-	}
-
-	// Cerrar cliente RabbitMQ
-	if rabbitClient != nil {
-		log.Println("⏳ Closing RabbitMQ connection...")
-		if err := rabbitClient.Close(); err != nil {
-			log.Printf("⚠ Error closing RabbitMQ client: %v", err)
-		}
-	}
-
-	log.Println("✁EServer exited properly")
 }

@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"search-api/domain"
+	"activities-api/domain"
 )
 
 type activityResponse struct {

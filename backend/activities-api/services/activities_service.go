@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"strings"
 	"sync"
 	"time"
 )
@@ -34,28 +35,23 @@ type ActivitiesServiceImpl struct {
 	usersAPI   string
 }
 
-func NewActivitiesService(repository ActivitiesRepository, publisher ActivityPublisher) *ActivitiesServiceImpl {
-	usersAPI := os.Getenv("USERS_API_URL")
-	if usersAPI == "" {
-		usersAPI = "http://localhost:8081"
-	}
+var (
+	ErrOwnerForbidden = errors.New("requester is not allowed to modify this resource")
+	ErrOwnerNotFound  = errors.New("owner user not found")
+)
 
+// Constructor
+func NewActivitiesService(repo ActivitiesRepository, publisher ActivityPublisher) *ActivitiesServiceImpl {
 	return &ActivitiesServiceImpl{
-		repository: repository,
+		repository: repo,
 		publisher:  publisher,
-		usersAPI:   usersAPI,
+		usersAPI:   os.Getenv("USERS_API_URL"),
 	}
 }
 
-var (
-	ErrOwnerNotFound  = errors.New("owner_not_found")
-	ErrOwnerForbidden = errors.New("owner_mismatch")
-)
-
 func (s *ActivitiesServiceImpl) requesterFromContext(ctx context.Context) (uint, string) {
-	uid, _ := ctx.Value(utils.ContextUserIDKey).(uint)
-	role, _ := ctx.Value(utils.ContextUserRoleKey).(string)
-	return uid, role
+	id, role := utils.RequesterFromContext(ctx)
+	return id, role
 }
 
 func (s *ActivitiesServiceImpl) validateOwner(ctx context.Context, ownerID uint, requesterID uint, requesterRole string) error {
@@ -82,17 +78,69 @@ func (s *ActivitiesServiceImpl) validateOwner(ctx context.Context, ownerID uint,
 	return nil
 }
 
-// List obtiene todas las actividades activas
+func (s *ActivitiesServiceImpl) validateActivity(activity domain.Activity) error {
+	if strings.TrimSpace(activity.Name) == "" {
+		return errors.New("activity name is required")
+	}
+	if strings.TrimSpace(activity.Category) == "" {
+		return errors.New("activity category is required")
+	}
+	if strings.TrimSpace(activity.Difficulty) == "" {
+		return errors.New("activity difficulty is required")
+	}
+	if activity.Duration <= 0 {
+		return errors.New("activity duration must be greater than zero")
+	}
+	if activity.MaxCapacity <= 0 {
+		return errors.New("max capacity must be greater than zero")
+	}
+	if activity.Price < 0 {
+		return errors.New("price cannot be negative")
+	}
+
+	return nil
+}
+
+func (s *ActivitiesServiceImpl) enrichActivity(activity *domain.Activity) error {
+	now := time.Now()
+
+	if activity.CreatedAt.IsZero() {
+		activity.CreatedAt = now
+	}
+
+	activity.UpdatedAt = now
+
+	if activity.Schedule == nil {
+		activity.Schedule = []string{}
+	}
+	if activity.Equipment == nil {
+		activity.Equipment = []string{}
+	}
+
+	return nil
+}
+
+// List activities (active only)
 func (s *ActivitiesServiceImpl) List(ctx context.Context) ([]domain.Activity, error) {
 	return s.repository.List(ctx)
 }
 
-// ListAll obtiene todas las actividades (incluyendo inactivas)
+// List all activities (active + inactive)
 func (s *ActivitiesServiceImpl) ListAll(ctx context.Context) ([]domain.Activity, error) {
 	return s.repository.ListAll(ctx)
 }
 
-// Create valida y crea una nueva actividad
+// Get by category
+func (s *ActivitiesServiceImpl) GetByCategory(ctx context.Context, category string) ([]domain.Activity, error) {
+	return s.repository.GetByCategory(ctx, category)
+}
+
+// Get by ID
+func (s *ActivitiesServiceImpl) GetByID(ctx context.Context, id string) (domain.Activity, error) {
+	return s.repository.GetByID(ctx, id)
+}
+
+// Create activity
 func (s *ActivitiesServiceImpl) Create(ctx context.Context, activity domain.Activity) (domain.Activity, error) {
 	requesterID, requesterRole := s.requesterFromContext(ctx)
 	if activity.CreatedBy == 0 {
@@ -106,7 +154,6 @@ func (s *ActivitiesServiceImpl) Create(ctx context.Context, activity domain.Acti
 	type taskResult struct {
 		name string
 		err  error
-		data interface{}
 	}
 
 	tasksCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -146,7 +193,7 @@ func (s *ActivitiesServiceImpl) Create(ctx context.Context, activity domain.Acti
 		}
 	}
 
-	created, err := s.repository.Create(ctx, activity)
+	created, err := s.repository.Create(tasksCtx, activity)
 	if err != nil {
 		return domain.Activity{}, fmt.Errorf("error creating activity in repository: %w", err)
 	}
@@ -162,157 +209,74 @@ func (s *ActivitiesServiceImpl) Create(ctx context.Context, activity domain.Acti
 	return created, nil
 }
 
-// Update actualiza una actividad existente
+// Update activity
 func (s *ActivitiesServiceImpl) Update(ctx context.Context, id string, activity domain.Activity) (domain.Activity, error) {
-	type taskResult struct {
-		name string
-		err  error
-		data interface{}
-	}
-
-	tasksCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	resultsCh := make(chan taskResult, 2)
-	var wg sync.WaitGroup
-	wg.Add(2)
-
-	go func() {
-		defer wg.Done()
-		existing, err := s.repository.GetByID(tasksCtx, id)
-		resultsCh <- taskResult{name: "fetch", err: err, data: existing}
-	}()
-
-	go func() {
-		defer wg.Done()
-		if err := s.validateActivity(activity); err != nil {
-			resultsCh <- taskResult{name: "validate", err: err}
-			return
-		}
-		resultsCh <- taskResult{name: "validate", err: nil}
-	}()
-
-	go func() {
-		wg.Wait()
-		close(resultsCh)
-	}()
-
-	var existing domain.Activity
-	for tr := range resultsCh {
-		if tr.err != nil {
-			cancel()
-			return domain.Activity{}, fmt.Errorf("task %s failed: %w", tr.name, tr.err)
-		}
-		if tr.name == "fetch" {
-			if v, ok := tr.data.(domain.Activity); ok {
-				existing = v
-			}
-		}
-	}
-
-	requesterID, requesterRole := s.requesterFromContext(ctx)
-	if err := s.validateOwner(ctx, existing.CreatedBy, requesterID, requesterRole); err != nil {
+	if err := s.validateActivity(activity); err != nil {
 		return domain.Activity{}, err
 	}
 
-	activity.CreatedBy = existing.CreatedBy
-
-	fmt.Printf("📋 Updating activity: id=%s, name=%s -> %s\n", existing.ID, existing.Name, activity.Name)
+	if err := s.enrichActivity(&activity); err != nil {
+		return domain.Activity{}, err
+	}
 
 	updated, err := s.repository.Update(ctx, id, activity)
 	if err != nil {
-		return domain.Activity{}, fmt.Errorf("error updating activity in repository: %w", err)
+		return domain.Activity{}, err
 	}
 
 	go func(id string) {
 		pubCtx, pubCancel := context.WithTimeout(context.Background(), 3*time.Second)
 		defer pubCancel()
-		if err := s.publisher.Publish(pubCtx, "updated", id); err != nil {
-			fmt.Printf("⚠ Warning: publish failed for activity %s: %v\n", id, err)
-		}
+		s.publisher.Publish(pubCtx, "updated", id)
 	}(updated.ID)
 
 	return updated, nil
 }
 
-// Delete elimina una actividad (soft delete)
+// Delete (soft delete)
 func (s *ActivitiesServiceImpl) Delete(ctx context.Context, id string) error {
-	tasksCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	existing, err := s.repository.GetByID(tasksCtx, id)
+	err := s.repository.Delete(ctx, id)
 	if err != nil {
-		return fmt.Errorf("error fetching activity: %w", err)
-	}
-
-	requesterID, requesterRole := s.requesterFromContext(ctx)
-	if err := s.validateOwner(ctx, existing.CreatedBy, requesterID, requesterRole); err != nil {
 		return err
 	}
 
-	fmt.Printf("🗑️ Soft deleting activity: id=%s, name=%s\n", existing.ID, existing.Name)
-
-	if err := s.repository.Delete(ctx, id); err != nil {
-		return fmt.Errorf("error deleting activity in repository: %w", err)
-	}
-
-	go func(id string) {
-		pubCtx, pubCancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer pubCancel()
-		if err := s.publisher.Publish(pubCtx, "deleted", id); err != nil {
-			fmt.Printf("⚠ Warning: publish failed for activity %s: %v\n", id, err)
-		}
-	}(id)
+	go func() {
+		pubCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		s.publisher.Publish(pubCtx, "deleted", id)
+	}()
 
 	return nil
 }
 
-// HardDelete elimina permanentemente una actividad
+// Hard delete
 func (s *ActivitiesServiceImpl) HardDelete(ctx context.Context, id string) error {
-	tasksCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
-	defer cancel()
-
-	existing, err := s.repository.GetByID(tasksCtx, id)
+	err := s.repository.HardDelete(ctx, id)
 	if err != nil {
-		return fmt.Errorf("error fetching activity: %w", err)
-	}
-
-	requesterID, requesterRole := s.requesterFromContext(ctx)
-	if err := s.validateOwner(ctx, existing.CreatedBy, requesterID, requesterRole); err != nil {
 		return err
 	}
 
-	fmt.Printf("🗑️ PERMANENTLY deleting activity: id=%s, name=%s\n", existing.ID, existing.Name)
-
-	if err := s.repository.HardDelete(ctx, id); err != nil {
-		return fmt.Errorf("error hard deleting activity in repository: %w", err)
-	}
-
-	go func(id string) {
-		pubCtx, pubCancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer pubCancel()
-		if err := s.publisher.Publish(pubCtx, "deleted", id); err != nil {
-			fmt.Printf("⚠ Warning: publish failed for activity %s: %v\n", id, err)
-		}
-	}(id)
+	go func() {
+		pubCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		s.publisher.Publish(pubCtx, "hard_deleted", id)
+	}()
 
 	return nil
 }
 
-// ToggleActive activa/desactiva una actividad
+// Toggle active
 func (s *ActivitiesServiceImpl) ToggleActive(ctx context.Context, id string) (domain.Activity, error) {
-	toggled, err := s.repository.ToggleActive(ctx, id)
+	activity, err := s.repository.ToggleActive(ctx, id)
 	if err != nil {
-		return domain.Activity{}, fmt.Errorf("error toggling activity status: %w", err)
+		return domain.Activity{}, err
 	}
 
-	go func(id string) {
-		pubCtx, pubCancel := context.WithTimeout(context.Background(), 3*time.Second)
-		defer pubCancel()
-		if err := s.publisher.Publish(pubCtx, "updated", id); err != nil {
-			fmt.Printf("⚠ Warning: publish failed for activity %s: %v\n", id, err)
-		}
-	}(id)
+	go func() {
+		pubCtx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+		defer cancel()
+		s.publisher.Publish(pubCtx, "toggled", id)
+	}()
 
-	return toggled, nil
+	return activity, nil
 }
