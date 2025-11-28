@@ -5,9 +5,9 @@ import (
 	"errors"
 	"strings"
 
-	"users-api/models"
-	"users-api/repositories"
-	"users-api/utils"
+	"arq-soft-II/backend/users-api/models"
+	"arq-soft-II/backend/users-api/repositories"
+	"arq-soft-II/backend/users-api/utils"
 
 	"gorm.io/gorm"
 )
