@@ -18,8 +18,10 @@ import {
   People as PeopleIcon,
   DirectionsRun as ActivityIcon,
   BookOnline as ReservationIcon,
+  PersonAdd as NewUserIcon,
 } from "@mui/icons-material";
 import { activitiesService } from "../../services/activitiesService";
+import { adminService, SystemStats } from "../../services/adminService";
 import { useAuth } from "../../contexts/AuthContext";
 import { useApiStatus } from "../../hooks/useApiStatus";
 
@@ -32,12 +34,13 @@ function AdminDashboard(): JSX.Element {
     activeActivities: 0,
     inactiveActivities: 0,
   });
+  const [userStats, setUserStats] = useState<SystemStats | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     // Check if user is admin
-    if (user?.role !== "admin") {
+    if (user?.role !== "admin" && user?.role !== "root") {
       navigate("/dashboard");
       return;
     }
@@ -49,6 +52,7 @@ function AdminDashboard(): JSX.Element {
     setLoading(true);
     setError(null);
     try {
+      // Cargar estadísticas de actividades
       const allActivities = await activitiesService.getAllActivities();
       const activeActivities = allActivities.activities.filter(
         (a) => a.is_active
@@ -59,6 +63,14 @@ function AdminDashboard(): JSX.Element {
         activeActivities: activeActivities.length,
         inactiveActivities: allActivities.count - activeActivities.length,
       });
+
+      // Cargar estadísticas de usuarios
+      try {
+        const userStatsResponse = await adminService.getSystemStats();
+        setUserStats(userStatsResponse.data);
+      } catch (err) {
+        console.error("Error loading user stats:", err);
+      }
     } catch (err: any) {
       setError(err.message || "Failed to load statistics");
       console.error("Error loading stats:", err);
@@ -75,7 +87,7 @@ function AdminDashboard(): JSX.Element {
     );
   }
 
-  if (user?.role !== "admin") {
+  if (user?.role !== "admin" && user?.role !== "root") {
     return (
       <Alert severity="error">
         You don't have permission to access this page.
@@ -89,7 +101,7 @@ function AdminDashboard(): JSX.Element {
         👨‍💼 Admin Dashboard
       </Typography>
       <Typography variant="subtitle1" color="textSecondary" gutterBottom sx={{ mb: 3 }}>
-        Manage activities, reservations, and platform settings
+        Manage activities, users, and platform settings
       </Typography>
 
       {/* API Status */}
@@ -108,8 +120,11 @@ function AdminDashboard(): JSX.Element {
         </Alert>
       )}
 
-      {/* Quick Actions */}
-      <Grid container spacing={3} sx={{ mb: 3 }}>
+      {/* Activity Statistics */}
+      <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
+        📊 Activity Statistics
+      </Typography>
+      <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={3}>
           <Card>
             <CardContent>
@@ -175,6 +190,80 @@ function AdminDashboard(): JSX.Element {
         </Grid>
       </Grid>
 
+      {/* User Statistics */}
+      {userStats && (
+        <>
+          <Typography variant="h6" gutterBottom sx={{ mb: 2 }}>
+            👥 User Statistics
+          </Typography>
+          <Grid container spacing={3} sx={{ mb: 3 }}>
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <PeopleIcon sx={{ fontSize: 40, color: "primary.main" }} />
+                    <Box>
+                      <Typography variant="h4">{userStats.total_users}</Typography>
+                      <Typography variant="body2" color="textSecondary">
+                        Total Users
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <PeopleIcon sx={{ fontSize: 40, color: "success.main" }} />
+                    <Box>
+                      <Typography variant="h4">{userStats.active_users}</Typography>
+                      <Typography variant="body2" color="textSecondary">
+                        Active Users
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <NewUserIcon sx={{ fontSize: 40, color: "info.main" }} />
+                    <Box>
+                      <Typography variant="h4">{userStats.recent_registrations}</Typography>
+                      <Typography variant="body2" color="textSecondary">
+                        New (Last 7 Days)
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
+
+            <Grid item xs={12} sm={6} md={3}>
+              <Card>
+                <CardContent>
+                  <Stack direction="row" spacing={2} alignItems="center">
+                    <PeopleIcon sx={{ fontSize: 40, color: "warning.main" }} />
+                    <Box>
+                      <Typography variant="h4">{userStats.users_by_role.admin + userStats.users_by_role.moderator}</Typography>
+                      <Typography variant="body2" color="textSecondary">
+                        Staff Members
+                      </Typography>
+                    </Box>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
+          </Grid>
+        </>
+      )}
+
       {/* Management Actions */}
       <Grid container spacing={3}>
         <Grid item xs={12} md={6}>
@@ -212,15 +301,15 @@ function AdminDashboard(): JSX.Element {
               User Management
             </Typography>
             <Typography variant="body2" color="textSecondary" sx={{ mb: 2 }}>
-              View and manage users (Coming soon)
+              View and manage users, roles, and permissions
             </Typography>
             <Button
               variant="outlined"
               fullWidth
               startIcon={<PeopleIcon />}
-              disabled
+              onClick={() => navigate("/admin/users")}
             >
-              Manage Users (Coming Soon)
+              Manage Users
             </Button>
           </Paper>
         </Grid>
