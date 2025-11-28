@@ -44,14 +44,23 @@ func (c *SearchController) HandleSearch(w http.ResponseWriter, r *http.Request) 
 	}
 	filters["page"] = page
 
-	size := 10
-	if s := r.URL.Query().Get("size"); s != "" {
-		var sizeNum int
-		if _, err := fmt.Sscanf(s, "%d", &sizeNum); err == nil && sizeNum > 0 && sizeNum <= 100 {
-			size = sizeNum
+	limit := 10
+	if l := r.URL.Query().Get("limit"); l != "" {
+		var limitNum int
+		if _, err := fmt.Sscanf(l, "%d", &limitNum); err == nil && limitNum > 0 && limitNum <= 100 {
+			limit = limitNum
+		}
+	} else if legacy := r.URL.Query().Get("size"); legacy != "" { // compatibilidad
+		var legacyNum int
+		if _, err := fmt.Sscanf(legacy, "%d", &legacyNum); err == nil && legacyNum > 0 && legacyNum <= 100 {
+			limit = legacyNum
 		}
 	}
-	filters["size"] = size
+	filters["limit"] = limit
+
+	if sort := r.URL.Query().Get("sort"); sort != "" {
+		filters["sort"] = sort
+	}
 
 	// Realizar bﾃｺsqueda
 	result, err := c.service.Search(query, filters)

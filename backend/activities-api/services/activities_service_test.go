@@ -1,13 +1,14 @@
 package services
 
 import (
-	"activities-api/domain"
-	"context"
-	"errors"
-	"sync"
-	"sync/atomic"
-	"testing"
-	"time"
+        "activities-api/domain"
+        "activities-api/utils"
+        "context"
+        "errors"
+        "sync"
+        "sync/atomic"
+        "testing"
+        "time"
 )
 
 // ===== MOCKS =====
@@ -145,17 +146,22 @@ func (m *mockPublisher) GetPublishedEvents() []PublishedEvent {
 
 // Helper para crear una actividad válida
 func createValidActivity(name string) domain.Activity {
-	return domain.Activity{
-		Name:        name,
-		Description: "Test activity description",
+        return domain.Activity{
+                Name:        name,
+                Description: "Test activity description",
 		Category:    "Sports",
 		Difficulty:  "beginner",
 		Location:    "Park",
 		Duration:    60,
 		Price:       25.0,
 		MaxCapacity: 50,
-		IsActive:    true,
-	}
+                IsActive:    true,
+        }
+}
+
+func adminCtx(base context.Context) context.Context {
+        ctx := context.WithValue(base, utils.ContextUserIDKey, uint(1))
+        return context.WithValue(ctx, utils.ContextUserRoleKey, "admin")
 }
 
 // ===== TESTS =====
@@ -175,11 +181,12 @@ func TestCreateWithConcurrentValidationAndEnrichment(t *testing.T) {
 
 	activity := createValidActivity("Running Event")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+        baseCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+        defer cancel()
+        ctx := adminCtx(baseCtx)
 
-	start := time.Now()
-	created, err := service.Create(ctx, activity)
+        start := time.Now()
+        created, err := service.Create(ctx, activity)
 	elapsed := time.Since(start)
 
 	if err != nil {
@@ -231,8 +238,9 @@ func TestUpdateWithConcurrentFetchAndValidate(t *testing.T) {
 
 	newData := createValidActivity("New Event Name")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+        baseCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+        defer cancel()
+        ctx := adminCtx(baseCtx)
 
 	start := time.Now()
 	updated, err := service.Update(ctx, "activity-123", newData)
@@ -288,10 +296,11 @@ func TestCreateContextCancellation(t *testing.T) {
 	activity := createValidActivity("Event")
 
 	// Cancelar contexto inmediatamente
-	ctx, cancel := context.WithCancel(context.Background())
-	cancel()
+        ctx, cancel := context.WithCancel(context.Background())
+        ctx = adminCtx(ctx)
+        cancel()
 
-	_, err := service.Create(ctx, activity)
+        _, err := service.Create(ctx, activity)
 
 	if err == nil {
 		t.Fatal("Expected error due to context cancellation")
@@ -326,8 +335,9 @@ func TestPublishAsyncWithTimeout(t *testing.T) {
 
 	activity := createValidActivity("Event")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+        baseCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+        defer cancel()
+        ctx := adminCtx(baseCtx)
 
 	start := time.Now()
 	created, err := service.Create(ctx, activity)
@@ -383,8 +393,9 @@ func TestConcurrentCreatesWithGoroutines(t *testing.T) {
 			activity := createValidActivity("Event")
 			activity.Name = "Event-" + string(rune(48+idx))
 
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-			defer cancel()
+                        baseCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+                        defer cancel()
+                        ctx := adminCtx(baseCtx)
 
 			_, err := service.Create(ctx, activity)
 			if err != nil {
@@ -423,8 +434,9 @@ func TestDeleteAsyncPublish(t *testing.T) {
 	publisher := &mockPublisher{}
 	service := NewActivitiesService(repo, publisher)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
-	defer cancel()
+        baseCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+        defer cancel()
+        ctx := adminCtx(baseCtx)
 
 	start := time.Now()
 	err := service.Delete(ctx, "activity-123")
@@ -468,8 +480,9 @@ func BenchmarkCreateWithConcurrency(b *testing.B) {
 
 	activity := createValidActivity("Event")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
+        baseCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+        defer cancel()
+        ctx := adminCtx(baseCtx)
 
 	b.ResetTimer()
 

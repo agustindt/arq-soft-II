@@ -2,68 +2,102 @@ package utils
 
 import (
 	"log"
-	"sync"
 	"time"
+
+	"github.com/bradfitz/gomemcache/memcache"
+	"github.com/karlseguin/ccache/v3"
 )
 
-// SimpleCache es una implementaciﾃｳn en memoria simple del cachﾃｩ
+// Cache implementa un caché en dos niveles: memoria local (CCache) y Memcached remoto.
 type Cache struct {
-	data sync.Map
+	local  *ccache.Cache[string]
+	remote *memcache.Client
+	ttl    time.Duration
 }
 
-type cacheItem struct {
-	value      []byte
-	expiration time.Time
+// NewCache crea una instancia del caché con TTL configurable.
+func NewCache(server string, ttl time.Duration) (*Cache, error) {
+	if ttl <= 0 {
+		ttl = 30 * time.Second
+	}
+
+	cache := &Cache{
+		local: ccache.New(ccache.Configure[string]().MaxSize(10_000)),
+		ttl:   ttl,
+	}
+
+	if server != "" {
+		cache.remote = memcache.New(server)
+		// Sondeo ligero para validar conexión
+		if err := cache.remote.Set(&memcache.Item{Key: "cache_ping", Value: []byte("ok"), Expiration: int32(ttl.Seconds())}); err != nil {
+			log.Printf("⚠️ Memcached no respondió al ping inicial: %v", err)
+		} else {
+			log.Printf("✅ Memcached conectado (%s) con TTL %s", server, ttl)
+		}
+	} else {
+		log.Printf("⚠️ Memcached server vacío, solo se usará caché local en memoria")
+	}
+
+	return cache, nil
 }
 
-// New crea una nueva instancia de cachﾃｩ
-func NewCache(server string) (*Cache, error) {
-	log.Println("Cache en memoria inicializado (server:", server, ")")
-	return &Cache{}, nil
-}
-
-// Set guarda un valor en cachﾃｩ
+// Set guarda un valor en ambos niveles de caché.
 func (c *Cache) Set(key string, value []byte, expiration time.Duration) error {
-	item := cacheItem{
-		value:      value,
-		expiration: time.Now().Add(expiration),
+	if expiration <= 0 {
+		expiration = c.ttl
 	}
-	c.data.Store(key, item)
+
+	c.local.Set(key, string(value), expiration)
+
+	if c.remote != nil {
+		if err := c.remote.Set(&memcache.Item{Key: key, Value: value, Expiration: int32(expiration.Seconds())}); err != nil {
+			log.Printf("⚠️ No se pudo guardar en Memcached: %v", err)
+		}
+	}
+
 	return nil
 }
 
-// Get obtiene un valor desde cachﾃｩ
+// Get obtiene un valor desde CCache y, si no existe, lo busca en Memcached.
 func (c *Cache) Get(key string) ([]byte, error) {
-	val, ok := c.data.Load(key)
-	if !ok {
-		log.Printf("Clave no encontrada en cachﾃｩ: %s\n", key)
-		return nil, ErrCacheMiss
+	if item := c.local.Get(key); item != nil && !item.Expired() {
+		return []byte(item.Value()), nil
 	}
 
-	item := val.(cacheItem)
+	if c.remote != nil {
+		mcItem, err := c.remote.Get(key)
+		if err == nil {
+			c.local.Set(key, string(mcItem.Value), c.ttl)
+			return mcItem.Value, nil
+		}
 
-	// Verificar expiraciﾃｳn
-	if time.Now().After(item.expiration) {
-		c.data.Delete(key)
-		log.Printf("Clave expirada en cachﾃｩ: %s\n", key)
-		return nil, ErrCacheMiss
+		if err != memcache.ErrCacheMiss {
+			log.Printf("⚠️ Error leyendo Memcached: %v", err)
+		}
 	}
 
-	return item.value, nil
+	return nil, ErrCacheMiss
 }
 
-// Delete elimina una clave del cachﾃｩ
+// Delete elimina una clave del caché.
 func (c *Cache) Delete(key string) error {
-	c.data.Delete(key)
+	c.local.Delete(key)
+	if c.remote != nil {
+		if err := c.remote.Delete(key); err != nil && err != memcache.ErrCacheMiss {
+			log.Printf("⚠️ No se pudo borrar clave en Memcached: %v", err)
+		}
+	}
 	return nil
 }
 
-// FlushAll borra todo el cachﾃｩ
+// FlushAll limpia los cachés locales y remotos.
 func (c *Cache) FlushAll() error {
-	c.data.Range(func(key, value interface{}) bool {
-		c.data.Delete(key)
-		return true
-	})
+	c.local.Clear()
+	if c.remote != nil {
+		if err := c.remote.FlushAll(); err != nil {
+			log.Printf("⚠️ No se pudo limpiar Memcached: %v", err)
+		}
+	}
 	return nil
 }
 

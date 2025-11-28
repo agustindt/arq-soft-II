@@ -31,6 +31,8 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 
 	"search-api/clients"
 	"search-api/config"
@@ -54,7 +56,16 @@ func main() {
 		memcachedURL = "memcached:11211" // valor por defecto si no hay env
 	}
 
-	memc, err := utils.NewCache(memcachedURL)
+	ttlSeconds := 60
+	if ttlStr := os.Getenv("CACHE_TTL_SECONDS"); ttlStr != "" {
+		if parsed, err := strconv.Atoi(ttlStr); err == nil && parsed > 0 {
+			ttlSeconds = parsed
+		}
+	}
+
+	cacheTTL := time.Duration(ttlSeconds) * time.Second
+
+	memc, err := utils.NewCache(memcachedURL, cacheTTL)
 	if err != nil {
 		log.Fatal("笶・Error conectando con Memcached:", err)
 	}
@@ -80,7 +91,7 @@ func main() {
 	}
 
 	// 隼 Crear service y controller con Solr
-	service := services.NewSearchService(memc, solrClient)
+	service := services.NewSearchService(memc, solrClient, cacheTTL)
 	controller := controllers.NewSearchController(service)
 
 	// 隼 Conectarse a RabbitMQ

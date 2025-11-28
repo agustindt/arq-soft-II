@@ -1,9 +1,13 @@
 package config
 
 import (
+	"context"
 	"encoding/json"
 	"log"
+	"os"
+	"time"
 
+	"search-api/clients"
 	"search-api/domain"
 	"search-api/services"
 
@@ -80,6 +84,28 @@ func StartRabbitConsumer(conn *amqp.Connection, searchService *services.SearchSe
 
 	log.Println("笨・RabbitMQ Consumer iniciado - Esperando eventos de actividades...")
 
+	activitiesAPI := os.Getenv("ACTIVITIES_API_URL")
+	if activitiesAPI == "" {
+		activitiesAPI = "http://activities-api:8082"
+	}
+
+	fetchActivity := func(id string) (domain.Activity, error) {
+		var lastErr error
+		for attempt := 0; attempt < 3; attempt++ {
+			httpCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			activity, err := clients.GetActivityByID(httpCtx, activitiesAPI, id)
+			cancel()
+			if err == nil {
+				return activity, nil
+			}
+
+			lastErr = err
+			time.Sleep(time.Duration(attempt+1) * 400 * time.Millisecond)
+		}
+
+		return domain.Activity{}, lastErr
+	}
+
 	go func() {
 		for msg := range msgs {
 			log.Printf("陶 [RabbitMQ] Mensaje recibido: %s", string(msg.Body))
@@ -97,11 +123,21 @@ func StartRabbitConsumer(conn *amqp.Connection, searchService *services.SearchSe
 			switch event.Action {
 			case "created":
 				log.Printf("・ Procesando creaciﾃｳn de actividad: %s", event.ActivityID)
-				processErr = searchService.IndexActivity(event.Data)
+				activity, err := fetchActivity(event.ActivityID)
+				if err != nil {
+					processErr = err
+					break
+				}
+				processErr = searchService.IndexActivity(activity)
 
 			case "updated":
 				log.Printf("売 Procesando actualizaciﾃｳn de actividad: %s", event.ActivityID)
-				processErr = searchService.UpdateActivity(event.Data)
+				activity, err := fetchActivity(event.ActivityID)
+				if err != nil {
+					processErr = err
+					break
+				}
+				processErr = searchService.UpdateActivity(activity)
 
 			case "deleted":
 				log.Printf("卵・・ Procesando eliminaciﾃｳn de actividad: %s", event.ActivityID)

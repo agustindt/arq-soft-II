@@ -109,13 +109,16 @@ export interface SearchFilters {
   price_min?: number;
   price_max?: number;
   page?: number;
-  size?: number;
+  limit?: number;
+  sort?: string;
 }
 
 export interface SearchResult {
   query: string;
   results: Activity[];
   total_found: number;
+  page?: number;
+  limit?: number;
   timestamp: string;
 }
 

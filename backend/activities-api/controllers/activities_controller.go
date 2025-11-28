@@ -1,8 +1,10 @@
-﻿package controllers
+package controllers
 
 import (
 	"activities-api/domain"
+	"activities-api/services"
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -87,6 +89,20 @@ func (c *ActivitiesController) CreateActivity(ctx *gin.Context) {
 
 	activity, err := c.service.Create(ctx.Request.Context(), newActivity)
 	if err != nil {
+		if errors.Is(err, services.ErrOwnerNotFound) {
+			ctx.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Owner not found or unauthorized",
+			})
+			return
+		}
+
+		if errors.Is(err, services.ErrOwnerForbidden) {
+			ctx.JSON(http.StatusForbidden, gin.H{
+				"error": "You are not allowed to modify this resource",
+			})
+			return
+		}
+
 		statusCode := http.StatusInternalServerError
 		if strings.Contains(err.Error(), "validation") || strings.Contains(err.Error(), "required") {
 			statusCode = http.StatusBadRequest
@@ -164,6 +180,16 @@ func (c *ActivitiesController) UpdateActivity(ctx *gin.Context) {
 			return
 		}
 
+		if errors.Is(err, services.ErrOwnerNotFound) {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Owner not found or unauthorized"})
+			return
+		}
+
+		if errors.Is(err, services.ErrOwnerForbidden) {
+			ctx.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to modify this resource"})
+			return
+		}
+
 		statusCode := http.StatusInternalServerError
 		if strings.Contains(err.Error(), "validation") || strings.Contains(err.Error(), "required") {
 			statusCode = http.StatusBadRequest
@@ -199,6 +225,16 @@ func (c *ActivitiesController) DeleteActivity(ctx *gin.Context) {
 			ctx.JSON(http.StatusNotFound, gin.H{
 				"error": "Activity not found",
 			})
+			return
+		}
+
+		if errors.Is(err, services.ErrOwnerNotFound) {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Owner not found or unauthorized"})
+			return
+		}
+
+		if errors.Is(err, services.ErrOwnerForbidden) {
+			ctx.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to modify this resource"})
 			return
 		}
 

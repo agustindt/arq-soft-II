@@ -132,16 +132,29 @@ func (s *SolrClient) Search(query string, filters map[string]interface{}) (*Solr
 	}
 
 	// Paginaciﾃｳn
+	size := 10
+	if s, ok := filters["limit"].(int); ok && s > 0 {
+		size = s
+	}
+
 	if page, ok := filters["page"].(int); ok && page > 0 {
-		size := 10 // por defecto
-		if s, ok := filters["size"].(int); ok {
-			size = s
-		}
 		start := (page - 1) * size
 		params.Set("start", fmt.Sprintf("%d", start))
 		params.Set("rows", fmt.Sprintf("%d", size))
 	} else {
-		params.Set("rows", "10")
+		params.Set("rows", fmt.Sprintf("%d", size))
+	}
+
+	// Ordenamiento
+	if sort, ok := filters["sort"].(string); ok && sort != "" {
+		sortParts := strings.Split(sort, "_")
+		if len(sortParts) == 2 {
+			direction := "asc"
+			if strings.ToLower(sortParts[1]) == "desc" {
+				direction = "desc"
+			}
+			params.Set("sort", fmt.Sprintf("%s %s", sortParts[0], direction))
+		}
 	}
 
 	// Formato de respuesta

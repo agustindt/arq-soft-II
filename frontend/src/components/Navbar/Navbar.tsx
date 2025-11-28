@@ -23,12 +23,20 @@ import {
   AdminPanelSettings as AdminIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../../contexts/AuthContext";
+import { getUserRoleFromToken } from "../../utils/jwtUtils";
 
 function Navbar(): JSX.Element {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const roleFromToken = token ? getUserRoleFromToken(token) : null;
+  const isAdmin =
+    roleFromToken === "admin" ||
+    roleFromToken === "root" ||
+    roleFromToken === "super_admin" ||
+    user?.role === "admin";
 
   const handleMenuOpen = (event: MouseEvent<HTMLButtonElement>): void => {
     setAnchorEl(event.currentTarget);
@@ -139,7 +147,7 @@ function Navbar(): JSX.Element {
           >
             My Activities
           </Button>
-          {user?.role === "admin" && (
+          {isAdmin && (
             <Button
               color="inherit"
               startIcon={<AdminIcon />}

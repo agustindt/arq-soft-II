@@ -146,7 +146,7 @@ services:
   reservations-service:
     build:
       context: .
-      dockerfile: ./backend/reservations-api/dockerfile
+      dockerfile: ./backend/reservations-api/Dockerfile
     container_name: reservations-service
     restart: always
     depends_on:

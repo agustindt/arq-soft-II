@@ -49,8 +49,10 @@ function SearchPage(): JSX.Element {
   const [category, setCategory] = useState<string>(searchParams.get("category") || "all");
   const [difficulty, setDifficulty] = useState<string>(searchParams.get("difficulty") || "all");
   const [priceRange, setPriceRange] = useState<number[]>([0, 1000]);
-  const [page, setPage] = useState<number>(1);
-  const [pageSize] = useState<number>(12);
+  const initialPage = parseInt(searchParams.get("page") || "1", 10) || 1;
+  const initialLimit = parseInt(searchParams.get("limit") || "12", 10) || 12;
+  const [page, setPage] = useState<number>(initialPage);
+  const [limit, setLimit] = useState<number>(initialLimit);
 
   useEffect(() => {
     // Load initial search if query params exist
@@ -59,7 +61,7 @@ function SearchPage(): JSX.Element {
     }
   }, []);
 
-  const performSearch = async (): Promise<void> => {
+  const performSearch = async (targetPage = page): Promise<void> => {
     setLoading(true);
     setError(null);
 
@@ -70,19 +72,23 @@ function SearchPage(): JSX.Element {
         difficulty: difficulty !== "all" ? difficulty : undefined,
         price_min: priceRange[0] > 0 ? priceRange[0] : undefined,
         price_max: priceRange[1] < 1000 ? priceRange[1] : undefined,
-        page: page,
-        size: pageSize,
+        page: targetPage,
+        limit: limit,
       };
 
       const result = await searchService.searchActivities(filters);
       setActivities(result.results || []);
       setTotalFound(result.total_found || 0);
+      if (result.page) setPage(result.page);
+      if (result.limit) setLimit(result.limit);
 
       // Update URL params
       const newParams = new URLSearchParams();
       if (filters.query) newParams.set("q", filters.query);
       if (filters.category) newParams.set("category", filters.category);
       if (filters.difficulty) newParams.set("difficulty", filters.difficulty);
+      newParams.set("page", String(targetPage));
+      newParams.set("limit", String(limit));
       setSearchParams(newParams);
     } catch (err: any) {
       console.error("Error searching activities:", err);
@@ -105,7 +111,7 @@ function SearchPage(): JSX.Element {
 
   const handleSearch = (): void => {
     setPage(1);
-    performSearch();
+    performSearch(1);
   };
 
   const handleActivityClick = (id: string): void => {
@@ -140,6 +146,8 @@ function SearchPage(): JSX.Element {
     };
     return colors[difficulty] || "default";
   };
+
+  const totalPages = Math.max(1, Math.ceil((totalFound || 0) / (limit || 1)));
 
   return (
     <Box sx={{ flexGrow: 1 }}>
@@ -202,7 +210,7 @@ function SearchPage(): JSX.Element {
                     // Trigger search automatically when filter changes
                     setTimeout(() => {
                       setPage(1);
-                      performSearch();
+                      performSearch(1);
                     }, 100);
                   }}
                 >
@@ -231,7 +239,7 @@ function SearchPage(): JSX.Element {
                     // Trigger search automatically when filter changes
                     setTimeout(() => {
                       setPage(1);
-                      performSearch();
+                      performSearch(1);
                     }, 100);
                   }}
                 >
@@ -442,6 +450,46 @@ function SearchPage(): JSX.Element {
                   </Grid>
                 ))}
               </Grid>
+
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  mt: 3,
+                  gap: 2,
+                  flexWrap: "wrap",
+                }}
+              >
+                <Button
+                  variant="outlined"
+                  disabled={page <= 1 || loading}
+                  onClick={() => {
+                    const newPage = Math.max(1, page - 1);
+                    setPage(newPage);
+                    performSearch(newPage);
+                  }}
+                >
+                  Previous
+                </Button>
+
+                <Typography variant="body2" color="textSecondary">
+                  Page {page} of {totalPages} • {totalFound} result
+                  {totalFound === 1 ? "" : "s"}
+                </Typography>
+
+                <Button
+                  variant="outlined"
+                  disabled={page >= totalPages || loading}
+                  onClick={() => {
+                    const newPage = Math.min(totalPages, page + 1);
+                    setPage(newPage);
+                    performSearch(newPage);
+                  }}
+                >
+                  Next
+                </Button>
+              </Box>
             </>
           )}
         </Grid>
