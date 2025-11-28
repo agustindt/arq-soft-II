@@ -2,6 +2,7 @@ package services
 
 import (
 	"activities-api/domain"
+	"activities-api/utils"
 	"context"
 	"errors"
 	"sync"
@@ -25,7 +26,6 @@ type mockRepository struct {
 	toggleActiveFn func(ctx context.Context, id string) (domain.Activity, error)
 	getByCategory  func(ctx context.Context, category string) ([]domain.Activity, error)
 
-	// Para tracking de llamadas
 	listCalls    int32
 	createCalls  int32
 	getByIDCalls int32
@@ -33,82 +33,11 @@ type mockRepository struct {
 	deleteCalls  int32
 }
 
-func (m *mockRepository) List(ctx context.Context) ([]domain.Activity, error) {
-	atomic.AddInt32(&m.listCalls, 1)
-	if m.listFn != nil {
-		return m.listFn(ctx)
-	}
-	return []domain.Activity{}, nil
-}
-
-func (m *mockRepository) ListAll(ctx context.Context) ([]domain.Activity, error) {
-	if m.listAllFn != nil {
-		return m.listAllFn(ctx)
-	}
-	return []domain.Activity{}, nil
-}
-
-func (m *mockRepository) Create(ctx context.Context, activity domain.Activity) (domain.Activity, error) {
-	atomic.AddInt32(&m.createCalls, 1)
-	if m.createFn != nil {
-		return m.createFn(ctx, activity)
-	}
-	return activity, nil
-}
-
-func (m *mockRepository) GetByID(ctx context.Context, id string) (domain.Activity, error) {
-	atomic.AddInt32(&m.getByIDCalls, 1)
-	if m.getByIDFn != nil {
-		return m.getByIDFn(ctx, id)
-	}
-	return domain.Activity{ID: id}, nil
-}
-
-func (m *mockRepository) Update(ctx context.Context, id string, activity domain.Activity) (domain.Activity, error) {
-	atomic.AddInt32(&m.updateCalls, 1)
-	if m.updateFn != nil {
-		return m.updateFn(ctx, id, activity)
-	}
-	return activity, nil
-}
-
-func (m *mockRepository) Delete(ctx context.Context, id string) error {
-	atomic.AddInt32(&m.deleteCalls, 1)
-	if m.deleteFn != nil {
-		return m.deleteFn(ctx, id)
-	}
-	return nil
-}
-
-func (m *mockRepository) HardDelete(ctx context.Context, id string) error {
-	if m.hardDeleteFn != nil {
-		return m.hardDeleteFn(ctx, id)
-	}
-	return nil
-}
-
-func (m *mockRepository) ToggleActive(ctx context.Context, id string) (domain.Activity, error) {
-	if m.toggleActiveFn != nil {
-		return m.toggleActiveFn(ctx, id)
-	}
-	return domain.Activity{}, nil
-}
-
-func (m *mockRepository) GetByCategory(ctx context.Context, category string) ([]domain.Activity, error) {
-	if m.getByCategory != nil {
-		return m.getByCategory(ctx, category)
-	}
-	return []domain.Activity{}, nil
-}
-
 type mockPublisher struct {
 	mu sync.Mutex
 
-	publishFn func(ctx context.Context, action string, activityID string) error
-
-	// Para tracking
-	publishCalls    int32
 	publishedEvents []PublishedEvent
+	publishFn       func(ctx context.Context, action string, activityID string) error
 }
 
 type PublishedEvent struct {
@@ -118,7 +47,6 @@ type PublishedEvent struct {
 }
 
 func (m *mockPublisher) Publish(ctx context.Context, action string, activityID string) error {
-	atomic.AddInt32(&m.publishCalls, 1)
 	m.mu.Lock()
 	m.publishedEvents = append(m.publishedEvents, PublishedEvent{
 		Action: action,
@@ -143,7 +71,6 @@ func (m *mockPublisher) GetPublishedEvents() []PublishedEvent {
 
 // ===== HELPERS =====
 
-// Helper para crear una actividad válida
 func createValidActivity(name string) domain.Activity {
 	return domain.Activity{
 		Name:        name,
@@ -158,10 +85,13 @@ func createValidActivity(name string) domain.Activity {
 	}
 }
 
+func adminCtx(base context.Context) context.Context {
+	ctx := context.WithValue(base, utils.ContextUserIDKey, uint(1))
+	return context.WithValue(ctx, utils.ContextUserRoleKey, "admin")
+}
+
 // ===== TESTS =====
 
-// TestCreateWithConcurrentValidationAndEnrichment verifica que Create ejecute
-// validación y enriquecimiento en paralelo usando goroutines
 func TestCreateWithConcurrentValidationAndEnrichment(t *testing.T) {
 	repo := &mockRepository{
 		createFn: func(ctx context.Context, activity domain.Activity) (domain.Activity, error) {
@@ -175,8 +105,9 @@ func TestCreateWithConcurrentValidationAndEnrichment(t *testing.T) {
 
 	activity := createValidActivity("Running Event")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	baseCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	ctx := adminCtx(baseCtx)
 
 	start := time.Now()
 	created, err := service.Create(ctx, activity)
@@ -190,15 +121,12 @@ func TestCreateWithConcurrentValidationAndEnrichment(t *testing.T) {
 		t.Fatal("Activity ID should not be empty")
 	}
 
-	// Verificar que se llamó a Create exactamente una vez
 	if atomic.LoadInt32(&repo.createCalls) != 1 {
 		t.Errorf("Expected 1 Create call, got %d", atomic.LoadInt32(&repo.createCalls))
 	}
 
-	// Esperar a que la goroutine de publish termine
 	time.Sleep(500 * time.Millisecond)
 
-	// Verificar que el evento fue publicado de forma asíncrona
 	events := publisher.GetPublishedEvents()
 	if len(events) != 1 {
 		t.Errorf("Expected 1 published event, got %d", len(events))
@@ -210,8 +138,6 @@ func TestCreateWithConcurrentValidationAndEnrichment(t *testing.T) {
 	t.Logf("✅ Create completed in %v with concurrent goroutines", elapsed)
 }
 
-// TestUpdateWithConcurrentFetchAndValidate verifica que Update ejecute
-// fetch y validación en paralelo
 func TestUpdateWithConcurrentFetchAndValidate(t *testing.T) {
 	existingActivity := createValidActivity("Old Event")
 	existingActivity.ID = "activity-123"
@@ -231,8 +157,9 @@ func TestUpdateWithConcurrentFetchAndValidate(t *testing.T) {
 
 	newData := createValidActivity("New Event Name")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	baseCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	ctx := adminCtx(baseCtx)
 
 	start := time.Now()
 	updated, err := service.Update(ctx, "activity-123", newData)
@@ -246,7 +173,6 @@ func TestUpdateWithConcurrentFetchAndValidate(t *testing.T) {
 		t.Errorf("Expected name '%s', got '%s'", newData.Name, updated.Name)
 	}
 
-	// Verificar que se llamó a GetByID y Update
 	if atomic.LoadInt32(&repo.getByIDCalls) != 1 {
 		t.Errorf("Expected 1 GetByID call, got %d", atomic.LoadInt32(&repo.getByIDCalls))
 	}
@@ -254,7 +180,6 @@ func TestUpdateWithConcurrentFetchAndValidate(t *testing.T) {
 		t.Errorf("Expected 1 Update call, got %d", atomic.LoadInt32(&repo.updateCalls))
 	}
 
-	// Esperar a que la goroutine de publish termine
 	time.Sleep(500 * time.Millisecond)
 
 	events := publisher.GetPublishedEvents()
@@ -268,8 +193,6 @@ func TestUpdateWithConcurrentFetchAndValidate(t *testing.T) {
 	t.Logf("✅ Update completed in %v with concurrent goroutines", elapsed)
 }
 
-// TestCreateContextCancellation verifica que si el contexto se cancela,
-// las goroutines respetan la cancelación
 func TestCreateContextCancellation(t *testing.T) {
 	repo := &mockRepository{
 		createFn: func(ctx context.Context, activity domain.Activity) (domain.Activity, error) {
@@ -287,8 +210,8 @@ func TestCreateContextCancellation(t *testing.T) {
 
 	activity := createValidActivity("Event")
 
-	// Cancelar contexto inmediatamente
 	ctx, cancel := context.WithCancel(context.Background())
+	ctx = adminCtx(ctx)
 	cancel()
 
 	_, err := service.Create(ctx, activity)
@@ -300,8 +223,6 @@ func TestCreateContextCancellation(t *testing.T) {
 	t.Logf("✅ Context cancellation handled correctly: %v", err)
 }
 
-// TestPublishAsyncWithTimeout verifica que el publish asíncrono respete
-// el timeout y no bloquee la respuesta de Create
 func TestPublishAsyncWithTimeout(t *testing.T) {
 	repo := &mockRepository{
 		createFn: func(ctx context.Context, activity domain.Activity) (domain.Activity, error) {
@@ -310,7 +231,6 @@ func TestPublishAsyncWithTimeout(t *testing.T) {
 		},
 	}
 
-	// Publisher que siempre falla después de 100ms
 	slowPublisher := &mockPublisher{
 		publishFn: func(ctx context.Context, action string, activityID string) error {
 			select {
@@ -326,8 +246,9 @@ func TestPublishAsyncWithTimeout(t *testing.T) {
 
 	activity := createValidActivity("Event")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	baseCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	ctx := adminCtx(baseCtx)
 
 	start := time.Now()
 	created, err := service.Create(ctx, activity)
@@ -337,7 +258,6 @@ func TestPublishAsyncWithTimeout(t *testing.T) {
 		t.Fatalf("Create failed: %v", err)
 	}
 
-	// Create debe retornar rápidamente (< 500ms) a pesar de que publish falle
 	if elapsed > 500*time.Millisecond {
 		t.Errorf("Create took too long: %v. Should not be blocked by publish", elapsed)
 	}
@@ -346,14 +266,11 @@ func TestPublishAsyncWithTimeout(t *testing.T) {
 		t.Errorf("Expected ID 'activity-123', got '%s'", created.ID)
 	}
 
-	// Esperar a que la goroutine de publish termine
 	time.Sleep(1 * time.Second)
 
 	t.Logf("✅ Create returned quickly (%v) while publish ran async", elapsed)
 }
 
-// TestConcurrentCreatesWithGoroutines verifica que múltiples Creates concurrentes
-// funcionan correctamente sin race conditions
 func TestConcurrentCreatesWithGoroutines(t *testing.T) {
 	var mu sync.Mutex
 	createdActivities := make(map[string]bool)
@@ -371,7 +288,6 @@ func TestConcurrentCreatesWithGoroutines(t *testing.T) {
 	publisher := &mockPublisher{}
 	service := NewActivitiesService(repo, publisher)
 
-	// Crear 10 actividades concurrentemente
 	var wg sync.WaitGroup
 	numGoroutines := 10
 
@@ -383,8 +299,9 @@ func TestConcurrentCreatesWithGoroutines(t *testing.T) {
 			activity := createValidActivity("Event")
 			activity.Name = "Event-" + string(rune(48+idx))
 
-			ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+			baseCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 			defer cancel()
+			ctx := adminCtx(baseCtx)
 
 			_, err := service.Create(ctx, activity)
 			if err != nil {
@@ -395,15 +312,12 @@ func TestConcurrentCreatesWithGoroutines(t *testing.T) {
 
 	wg.Wait()
 
-	// Esperar a que los publishes terminen
 	time.Sleep(1 * time.Second)
 
-	// Verificar que todas se crearon
 	if len(createdActivities) != numGoroutines {
 		t.Errorf("Expected %d created activities, got %d", numGoroutines, len(createdActivities))
 	}
 
-	// Verificar que la cantidad de events publicados es correcta
 	events := publisher.GetPublishedEvents()
 	if len(events) != numGoroutines {
 		t.Errorf("Expected %d published events, got %d", numGoroutines, len(events))
@@ -412,7 +326,6 @@ func TestConcurrentCreatesWithGoroutines(t *testing.T) {
 	t.Logf("✅ %d concurrent Creates completed successfully with %d events published", numGoroutines, len(events))
 }
 
-// TestDeleteAsyncPublish verifica que Delete publique el evento de forma asíncrona
 func TestDeleteAsyncPublish(t *testing.T) {
 	repo := &mockRepository{
 		getByIDFn: func(ctx context.Context, id string) (domain.Activity, error) {
@@ -423,8 +336,9 @@ func TestDeleteAsyncPublish(t *testing.T) {
 	publisher := &mockPublisher{}
 	service := NewActivitiesService(repo, publisher)
 
-	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+	baseCtx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
 	defer cancel()
+	ctx := adminCtx(baseCtx)
 
 	start := time.Now()
 	err := service.Delete(ctx, "activity-123")
@@ -434,12 +348,10 @@ func TestDeleteAsyncPublish(t *testing.T) {
 		t.Fatalf("Delete failed: %v", err)
 	}
 
-	// Delete debe retornar rápidamente
 	if elapsed > 1*time.Second {
 		t.Errorf("Delete took too long: %v", elapsed)
 	}
 
-	// Esperar a que la goroutine de publish termine
 	time.Sleep(500 * time.Millisecond)
 
 	events := publisher.GetPublishedEvents()
@@ -453,8 +365,6 @@ func TestDeleteAsyncPublish(t *testing.T) {
 	t.Logf("✅ Delete completed in %v with async publish", elapsed)
 }
 
-// BenchmarkCreateWithConcurrency benchmarka el performance de Create
-// con goroutines concurrentes
 func BenchmarkCreateWithConcurrency(b *testing.B) {
 	repo := &mockRepository{
 		createFn: func(ctx context.Context, activity domain.Activity) (domain.Activity, error) {
@@ -468,8 +378,9 @@ func BenchmarkCreateWithConcurrency(b *testing.B) {
 
 	activity := createValidActivity("Event")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	baseCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
+	ctx := adminCtx(baseCtx)
 
 	b.ResetTimer()
 

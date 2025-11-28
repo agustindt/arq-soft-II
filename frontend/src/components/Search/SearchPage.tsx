@@ -1,28 +1,25 @@
-import React, { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
 import {
   Box,
   Typography,
   Grid,
-  Card,
-  CardContent,
-  CardMedia,
-  CardActions,
-  Button,
-  Chip,
-  CircularProgress,
-  Alert,
-  TextField,
-  InputAdornment,
-  FormControl,
-  InputLabel,
+  Paper,
   Select,
   MenuItem,
-  Paper,
-  Stack,
+  FormControl,
+  InputLabel,
+  TextField,
   Slider,
-  Divider,
+  Button,
+  Stack,
+  Chip,
+  Card,
+  CardActions,
+  CardContent,
+  InputAdornment,
+  Alert,
 } from "@mui/material";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import React, { useEffect, useState } from "react";
 import {
   Search as SearchIcon,
   LocationOn as LocationIcon,
@@ -44,22 +41,23 @@ function SearchPage(): JSX.Element {
   const [error, setError] = useState<string | null>(null);
   const [totalFound, setTotalFound] = useState<number>(0);
 
-  // Search filters state
   const [query, setQuery] = useState<string>(searchParams.get("q") || "");
   const [category, setCategory] = useState<string>(searchParams.get("category") || "all");
   const [difficulty, setDifficulty] = useState<string>(searchParams.get("difficulty") || "all");
   const [priceRange, setPriceRange] = useState<number[]>([0, 1000]);
-  const [page, setPage] = useState<number>(1);
-  const [pageSize] = useState<number>(12);
+
+  const initialPage = parseInt(searchParams.get("page") || "1", 10) || 1;
+  const initialLimit = parseInt(searchParams.get("limit") || "12", 10) || 12;
+  const [page, setPage] = useState<number>(initialPage);
+  const [limit, setLimit] = useState<number>(initialLimit);
 
   useEffect(() => {
-    // Load initial search if query params exist
     if (searchParams.get("q") || searchParams.get("category") || searchParams.get("difficulty")) {
       performSearch();
     }
   }, []);
 
-  const performSearch = async (): Promise<void> => {
+  const performSearch = async (targetPage = page): Promise<void> => {
     setLoading(true);
     setError(null);
 
@@ -70,33 +68,33 @@ function SearchPage(): JSX.Element {
         difficulty: difficulty !== "all" ? difficulty : undefined,
         price_min: priceRange[0] > 0 ? priceRange[0] : undefined,
         price_max: priceRange[1] < 1000 ? priceRange[1] : undefined,
-        page: page,
-        size: pageSize,
+        page: targetPage,
+        limit: limit,
       };
 
       const result = await searchService.searchActivities(filters);
       setActivities(result.results || []);
       setTotalFound(result.total_found || 0);
 
-      // Update URL params
+      if (result.page) setPage(result.page);
+      if (result.limit) setLimit(result.limit);
+
       const newParams = new URLSearchParams();
       if (filters.query) newParams.set("q", filters.query);
       if (filters.category) newParams.set("category", filters.category);
       if (filters.difficulty) newParams.set("difficulty", filters.difficulty);
+      newParams.set("page", String(targetPage));
+      newParams.set("limit", String(limit));
       setSearchParams(newParams);
     } catch (err: any) {
       console.error("Error searching activities:", err);
-      
-      // Better error handling
+
       if (err.response) {
-        // Server responded with error status
         setError(err.response.data?.message || `Server error: ${err.response.status}`);
       } else if (err.request) {
-        // Request was made but no response received
-        setError("Network error: Unable to connect to search service. Please check your connection.");
+        setError("Network error: Unable to connect to search service.");
       } else {
-        // Something else happened
-        setError(err.message || "Failed to search activities. Please try again.");
+        setError(err.message || "Failed to search activities.");
       }
     } finally {
       setLoading(false);
@@ -105,7 +103,7 @@ function SearchPage(): JSX.Element {
 
   const handleSearch = (): void => {
     setPage(1);
-    performSearch();
+    performSearch(1);
   };
 
   const handleActivityClick = (id: string): void => {
@@ -115,7 +113,7 @@ function SearchPage(): JSX.Element {
   const getCategoryColor = (
     category: string
   ): "default" | "primary" | "secondary" | "success" | "warning" | "error" => {
-    const colors: Record<string, "default" | "primary" | "secondary" | "success" | "warning" | "error"> = {
+    const colors: Record<string, any> = {
       football: "primary",
       basketball: "secondary",
       tennis: "success",
@@ -133,13 +131,15 @@ function SearchPage(): JSX.Element {
   const getDifficultyColor = (
     difficulty: string
   ): "default" | "primary" | "secondary" | "success" | "warning" | "error" => {
-    const colors: Record<string, "default" | "primary" | "secondary" | "success" | "warning" | "error"> = {
+    const colors: Record<string, any> = {
       beginner: "success",
       intermediate: "warning",
       advanced: "error",
     };
     return colors[difficulty] || "default";
   };
+
+  const totalPages = Math.max(1, Math.ceil((totalFound || 0) / (limit || 1)));
 
   return (
     <Box sx={{ flexGrow: 1 }}>
@@ -150,18 +150,13 @@ function SearchPage(): JSX.Element {
         Find the perfect activity for you
       </Typography>
 
-      {/* API Status */}
       {apiStatus && (
-        <Alert
-          severity={apiStatus.status === "online" ? "success" : "error"}
-          sx={{ mb: 3 }}
-        >
+        <Alert severity={apiStatus.status === "online" ? "success" : "error"} sx={{ mb: 3 }}>
           API Status: {apiStatus.message}
         </Alert>
       )}
 
       <Grid container spacing={3}>
-        {/* Filters Sidebar */}
         <Grid item xs={12} md={3}>
           <Paper sx={{ p: 3, position: "sticky", top: 20 }}>
             <Typography variant="h6" gutterBottom>
@@ -169,259 +164,159 @@ function SearchPage(): JSX.Element {
               Filters
             </Typography>
 
-            <Stack spacing={3}>
-              {/* Search Query */}
-              <TextField
-                fullWidth
-                label="Search"
-                placeholder="Search activities..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyPress={(e) => {
-                  if (e.key === "Enter") {
-                    handleSearch();
-                  }
+            <TextField
+              fullWidth
+              label="Search..."
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              onKeyPress={(e) => {
+                if (e.key === "Enter") handleSearch();
+              }}
+              sx={{ mb: 3 }}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <SearchIcon />
+                  </InputAdornment>
+                ),
+              }}
+            />
+
+            <FormControl fullWidth sx={{ mb: 3 }}>
+              <InputLabel>Category</InputLabel>
+              <Select
+                value={category}
+                label="Category"
+                onChange={(e) => {
+                  setCategory(e.target.value);
+                  setTimeout(() => {
+                    setPage(1);
+                    performSearch(1);
+                  }, 100);
                 }}
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <SearchIcon />
-                    </InputAdornment>
-                  ),
-                }}
-              />
-
-              {/* Category Filter */}
-              <FormControl fullWidth>
-                <InputLabel>Category</InputLabel>
-                <Select
-                  value={category}
-                  label="Category"
-                  onChange={(e) => {
-                    setCategory(e.target.value);
-                    // Trigger search automatically when filter changes
-                    setTimeout(() => {
-                      setPage(1);
-                      performSearch();
-                    }, 100);
-                  }}
-                >
-                  <MenuItem value="all">All Categories</MenuItem>
-                  <MenuItem value="football">Football</MenuItem>
-                  <MenuItem value="basketball">Basketball</MenuItem>
-                  <MenuItem value="tennis">Tennis</MenuItem>
-                  <MenuItem value="swimming">Swimming</MenuItem>
-                  <MenuItem value="running">Running</MenuItem>
-                  <MenuItem value="cycling">Cycling</MenuItem>
-                  <MenuItem value="yoga">Yoga</MenuItem>
-                  <MenuItem value="fitness">Fitness</MenuItem>
-                  <MenuItem value="volleyball">Volleyball</MenuItem>
-                  <MenuItem value="paddle">Paddle</MenuItem>
-                </Select>
-              </FormControl>
-
-              {/* Difficulty Filter */}
-              <FormControl fullWidth>
-                <InputLabel>Difficulty</InputLabel>
-                <Select
-                  value={difficulty}
-                  label="Difficulty"
-                  onChange={(e) => {
-                    setDifficulty(e.target.value);
-                    // Trigger search automatically when filter changes
-                    setTimeout(() => {
-                      setPage(1);
-                      performSearch();
-                    }, 100);
-                  }}
-                >
-                  <MenuItem value="all">All Levels</MenuItem>
-                  <MenuItem value="beginner">Beginner</MenuItem>
-                  <MenuItem value="intermediate">Intermediate</MenuItem>
-                  <MenuItem value="advanced">Advanced</MenuItem>
-                </Select>
-              </FormControl>
-
-              {/* Price Range */}
-              <Box>
-                <Typography gutterBottom>Price Range</Typography>
-                <Slider
-                  value={priceRange}
-                  onChange={(_, newValue) => setPriceRange(newValue as number[])}
-                  valueLabelDisplay="auto"
-                  min={0}
-                  max={1000}
-                  step={10}
-                  marks={[
-                    { value: 0, label: "$0" },
-                    { value: 500, label: "$500" },
-                    { value: 1000, label: "$1000+" },
-                  ]}
-                />
-                <Box sx={{ display: "flex", justifyContent: "space-between", mt: 1 }}>
-                  <Typography variant="caption">${priceRange[0]}</Typography>
-                  <Typography variant="caption">${priceRange[1]}</Typography>
-                </Box>
-              </Box>
-
-              <Button
-                variant="contained"
-                fullWidth
-                onClick={handleSearch}
-                disabled={loading}
-                startIcon={loading ? <CircularProgress size={20} /> : <SearchIcon />}
               >
-                {loading ? "Searching..." : "Search"}
+                <MenuItem value="all">All Categories</MenuItem>
+                <MenuItem value="football">Football</MenuItem>
+                <MenuItem value="basketball">Basketball</MenuItem>
+                <MenuItem value="tennis">Tennis</MenuItem>
+                <MenuItem value="swimming">Swimming</MenuItem>
+                <MenuItem value="running">Running</MenuItem>
+                <MenuItem value="cycling">Cycling</MenuItem>
+                <MenuItem value="yoga">Yoga</MenuItem>
+                <MenuItem value="fitness">Fitness</MenuItem>
+                <MenuItem value="volleyball">Volleyball</MenuItem>
+                <MenuItem value="paddle">Paddle</MenuItem>
+              </Select>
+            </FormControl>
+
+            <FormControl fullWidth sx={{ mb: 3 }}>
+              <InputLabel>Difficulty</InputLabel>
+              <Select
+                value={difficulty}
+                label="Difficulty"
+                onChange={(e) => {
+                  setDifficulty(e.target.value);
+                  setTimeout(() => {
+                    setPage(1);
+                    performSearch(1);
+                  }, 100);
+                }}
+              >
+                <MenuItem value="all">All Levels</MenuItem>
+                <MenuItem value="beginner">Beginner</MenuItem>
+                <MenuItem value="intermediate">Intermediate</MenuItem>
+                <MenuItem value="advanced">Advanced</MenuItem>
+              </Select>
+            </FormControl>
+
+            <Box sx={{ mb: 2 }}>
+              <Typography gutterBottom>Price Range</Typography>
+              <Slider
+                value={priceRange}
+                onChange={(_, newValue) => setPriceRange(newValue as number[])}
+                valueLabelDisplay="auto"
+                min={0}
+                max={1000}
+                step={10}
+                marks={[
+                  { value: 0, label: "$0" },
+                  { value: 500, label: "$500" },
+                  { value: 1000, label: "$1000+" },
+                ]}
+              />
+              <Button fullWidth variant="contained" sx={{ mt: 1 }} onClick={handleSearch}>
+                Apply Filters
               </Button>
-            </Stack>
+            </Box>
           </Paper>
         </Grid>
 
-        {/* Results */}
         <Grid item xs={12} md={9}>
-          {loading && activities.length === 0 ? (
-            <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
-              <CircularProgress />
-            </Box>
-          ) : error ? (
-            <Alert severity="error">{error}</Alert>
-          ) : activities.length === 0 ? (
-            <Paper sx={{ p: 4, textAlign: "center" }}>
-              <Typography variant="h6" color="textSecondary">
-                No activities found
-              </Typography>
-              <Typography variant="body2" color="textSecondary" sx={{ mt: 1 }}>
-                Try adjusting your search criteria or filters
-              </Typography>
-            </Paper>
+          {error && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+
+          {!loading && activities.length === 0 && (
+            <Typography variant="h6" color="textSecondary">
+              No activities found.
+            </Typography>
+          )}
+
+          {loading ? (
+            <Typography>Loading...</Typography>
           ) : (
             <>
-              <Box sx={{ mb: 2, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <Typography variant="body1" color="textSecondary">
-                  Found {totalFound} result{totalFound !== 1 ? "s" : ""}
-                </Typography>
-              </Box>
-
               <Grid container spacing={3}>
                 {activities.map((activity) => (
-                  <Grid item xs={12} sm={6} lg={4} key={activity.id}>
+                  <Grid item xs={12} sm={6} md={4} key={activity.id}>
                     <Card
                       sx={{
-                        height: "100%",
-                        display: "flex",
-                        flexDirection: "column",
                         cursor: "pointer",
-                        transition: "transform 0.2s, box-shadow 0.2s",
+                        transition: "all 0.2s",
                         "&:hover": {
-                          transform: "translateY(-4px)",
-                          boxShadow: 6,
+                          transform: "scale(1.03)",
+                          boxShadow: 4,
                         },
                       }}
                       onClick={() => handleActivityClick(activity.id)}
                     >
-                      {activity.image_url ? (
-                        <CardMedia
-                          component="img"
-                          height="200"
-                          image={activity.image_url}
-                          alt={activity.name}
-                        />
-                      ) : (
-                        <Box
-                          sx={{
-                            height: 200,
-                            bgcolor: "primary.light",
-                            display: "flex",
-                            alignItems: "center",
-                            justifyContent: "center",
-                          }}
-                        >
-                          <Typography variant="h4" color="primary.contrastText">
-                            {activity.name.charAt(0)}
-                          </Typography>
-                        </Box>
-                      )}
-
-                      <CardContent sx={{ flexGrow: 1 }}>
-                        <Box
-                          sx={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            alignItems: "start",
-                            mb: 1,
-                          }}
-                        >
-                          <Typography variant="h6" component="h2" noWrap>
-                            {activity.name}
-                          </Typography>
-                          {!activity.is_active && (
-                            <Chip label="Inactive" size="small" color="default" />
-                          )}
-                        </Box>
-
-                        <Typography
-                          variant="body2"
-                          color="textSecondary"
-                          sx={{
-                            mb: 2,
-                            display: "-webkit-box",
-                            WebkitLineClamp: 2,
-                            WebkitBoxOrient: "vertical",
-                            overflow: "hidden",
-                          }}
-                        >
-                          {activity.description}
+                      <CardContent>
+                        <Typography variant="h6" gutterBottom>
+                          {activity.name}
                         </Typography>
-
-                        <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1, mb: 2 }}>
+                        <Stack spacing={1} sx={{ mt: 1 }}>
                           <Chip
                             label={activity.category}
-                            size="small"
                             color={getCategoryColor(activity.category)}
+                            size="small"
                           />
                           <Chip
                             label={activity.difficulty}
-                            size="small"
                             color={getDifficultyColor(activity.difficulty)}
+                            size="small"
                           />
-                        </Box>
 
-                        <Stack spacing={1}>
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                            <LocationIcon fontSize="small" color="action" />
-                            <Typography variant="body2" color="textSecondary">
-                              {activity.location}
-                            </Typography>
-                          </Box>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <LocationIcon fontSize="small" />
+                            <Typography variant="body2">{activity.location}</Typography>
+                          </Stack>
 
-                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
-                            <MoneyIcon fontSize="small" color="action" />
-                            <Typography variant="body2" fontWeight="bold">
-                              ${activity.price.toFixed(2)}
-                            </Typography>
-                          </Box>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <MoneyIcon fontSize="small" />
+                            <Typography variant="body2">${activity.price}</Typography>
+                          </Stack>
 
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              gap: 2,
-                            }}
-                          >
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                              <PeopleIcon fontSize="small" color="action" />
-                              <Typography variant="body2" color="textSecondary">
-                                Max: {activity.max_capacity}
-                              </Typography>
-                            </Box>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <PeopleIcon fontSize="small" />
+                            <Typography variant="body2">{activity.capacity} seats</Typography>
+                          </Stack>
 
-                            <Box sx={{ display: "flex", alignItems: "center", gap: 0.5 }}>
-                              <TimeIcon fontSize="small" color="action" />
-                              <Typography variant="body2" color="textSecondary">
-                                {activity.duration} min
-                              </Typography>
-                            </Box>
-                          </Box>
+                          <Stack direction="row" spacing={1} alignItems="center">
+                            <TimeIcon fontSize="small" />
+                            <Typography variant="body2">{activity.duration} min</Typography>
+                          </Stack>
                         </Stack>
                       </CardContent>
 
@@ -442,6 +337,46 @@ function SearchPage(): JSX.Element {
                   </Grid>
                 ))}
               </Grid>
+
+              <Box
+                sx={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  mt: 3,
+                  gap: 2,
+                  flexWrap: "wrap",
+                }}
+              >
+                <Button
+                  variant="outlined"
+                  disabled={page <= 1 || loading}
+                  onClick={() => {
+                    const newPage = Math.max(1, page - 1);
+                    setPage(newPage);
+                    performSearch(newPage);
+                  }}
+                >
+                  Previous
+                </Button>
+
+                <Typography variant="body2" color="textSecondary">
+                  Page {page} of {totalPages} • {totalFound} result
+                  {totalFound === 1 ? "" : "s"}
+                </Typography>
+
+                <Button
+                  variant="outlined"
+                  disabled={page >= totalPages || loading}
+                  onClick={() => {
+                    const newPage = Math.min(totalPages, page + 1);
+                    setPage(newPage);
+                    performSearch(newPage);
+                  }}
+                >
+                  Next
+                </Button>
+              </Box>
             </>
           )}
         </Grid>
@@ -451,4 +386,3 @@ function SearchPage(): JSX.Element {
 }
 
 export default SearchPage;
-

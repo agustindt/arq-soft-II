@@ -1,4 +1,3 @@
-import React, { ReactNode } from "react";
 import {
   BrowserRouter as Router,
   Routes,
@@ -26,19 +25,21 @@ import {
   UserManagement,
 } from "./components/Admin";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { getUserRoleFromToken } from "./utils/jwtUtils";
+import { ReactNode } from "react";
 
 // Tema personalizado moderno para la app
 const theme = createTheme({
   palette: {
     mode: "light",
     primary: {
-      main: "#6366f1", // Indigo moderno
+      main: "#6366f1",
       light: "#818cf8",
       dark: "#4f46e5",
       contrastText: "#ffffff",
     },
     secondary: {
-      main: "#ec4899", // Pink moderno
+      main: "#ec4899",
       light: "#f472b6",
       dark: "#db2777",
       contrastText: "#ffffff",
@@ -51,138 +52,14 @@ const theme = createTheme({
       primary: "#1e293b",
       secondary: "#64748b",
     },
-    success: {
-      main: "#10b981",
-      light: "#34d399",
-      dark: "#059669",
-    },
-    warning: {
-      main: "#f59e0b",
-      light: "#fbbf24",
-      dark: "#d97706",
-    },
-    error: {
-      main: "#ef4444",
-      light: "#f87171",
-      dark: "#dc2626",
-    },
-  },
-  typography: {
-    fontFamily: [
-      "-apple-system",
-      "BlinkMacSystemFont",
-      '"Segoe UI"',
-      "Roboto",
-      '"Helvetica Neue"',
-      "Arial",
-      "sans-serif",
-      '"Apple Color Emoji"',
-      '"Segoe UI Emoji"',
-      '"Segoe UI Symbol"',
-    ].join(","),
-    h1: {
-      fontWeight: 700,
-      fontSize: "2.5rem",
-      lineHeight: 1.2,
-    },
-    h2: {
-      fontWeight: 700,
-      fontSize: "2rem",
-      lineHeight: 1.3,
-    },
-    h3: {
-      fontWeight: 600,
-      fontSize: "1.75rem",
-      lineHeight: 1.4,
-    },
-    h4: {
-      fontWeight: 600,
-      fontSize: "1.5rem",
-      lineHeight: 1.4,
-    },
-    h5: {
-      fontWeight: 600,
-      fontSize: "1.25rem",
-      lineHeight: 1.5,
-    },
-    h6: {
-      fontWeight: 600,
-      fontSize: "1.125rem",
-      lineHeight: 1.5,
-    },
-    button: {
-      fontWeight: 600,
-      textTransform: "none",
-    },
-  },
-  shape: {
-    borderRadius: 12,
-  },
-  components: {
-    MuiButton: {
-      styleOverrides: {
-        root: {
-          borderRadius: 10,
-          padding: "10px 24px",
-          boxShadow: "none",
-          "&:hover": {
-            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
-          },
-        },
-        contained: {
-          background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
-          "&:hover": {
-            background: "linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%)",
-          },
-        },
-      },
-    },
-    MuiCard: {
-      styleOverrides: {
-        root: {
-          borderRadius: 16,
-          boxShadow:
-            "0 1px 3px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.24)",
-          transition: "all 0.3s cubic-bezier(0.4, 0, 0.2, 1)",
-          "&:hover": {
-            boxShadow:
-              "0 10px 20px rgba(0, 0, 0, 0.1), 0 6px 6px rgba(0, 0, 0, 0.08)",
-          },
-        },
-      },
-    },
-    MuiTextField: {
-      styleOverrides: {
-        root: {
-          "& .MuiOutlinedInput-root": {
-            borderRadius: 10,
-            "&:hover fieldset": {
-              borderColor: "#6366f1",
-            },
-            "&.Mui-focused fieldset": {
-              borderColor: "#6366f1",
-            },
-          },
-        },
-      },
-    },
-    MuiAppBar: {
-      styleOverrides: {
-        root: {
-          background: "linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%)",
-          boxShadow: "0 4px 6px rgba(0, 0, 0, 0.1)",
-        },
-      },
-    },
   },
 });
 
-// Props para rutas protegidas
 interface RouteProps {
   children: ReactNode;
 }
 
-// Componente para rutas protegidas
+// Rutas protegidas
 function ProtectedRoute({ children }: RouteProps): JSX.Element {
   const { isAuthenticated, loading } = useAuth();
 
@@ -193,7 +70,7 @@ function ProtectedRoute({ children }: RouteProps): JSX.Element {
   return isAuthenticated ? <>{children}</> : <Navigate to="/login" />;
 }
 
-// Componente para rutas públicas (solo accesibles si NO estás logueado)
+// Rutas públicas
 function PublicRoute({ children }: RouteProps): JSX.Element {
   const { isAuthenticated, loading } = useAuth();
 
@@ -202,6 +79,25 @@ function PublicRoute({ children }: RouteProps): JSX.Element {
   }
 
   return !isAuthenticated ? <>{children}</> : <Navigate to="/my-activities" />;
+}
+
+// Nueva protección para ADMIN
+function RequireAdmin({ children }: RouteProps): JSX.Element {
+  const { isAuthenticated, loading, token } = useAuth();
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  const role = token ? getUserRoleFromToken(token) : null;
+  const isAdmin =
+    role === "admin" || role === "root" || role === "super_admin";
+
+  if (!isAuthenticated || !isAdmin) {
+    return <Navigate to="/login" />;
+  }
+
+  return <>{children}</>;
 }
 
 function AppContent(): JSX.Element {
@@ -294,44 +190,46 @@ function AppContent(): JSX.Element {
               </ProtectedRoute>
             }
           />
+
+          {/* ADMIN */}
           <Route
             path="/admin"
             element={
-              <ProtectedRoute>
+              <RequireAdmin>
                 <AdminDashboard />
-              </ProtectedRoute>
+              </RequireAdmin>
             }
           />
           <Route
             path="/admin/activities"
             element={
-              <ProtectedRoute>
+              <RequireAdmin>
                 <ActivityManagement />
-              </ProtectedRoute>
+              </RequireAdmin>
             }
           />
           <Route
             path="/admin/activities/new"
             element={
-              <ProtectedRoute>
+              <RequireAdmin>
                 <CreateActivity />
-              </ProtectedRoute>
+              </RequireAdmin>
             }
           />
           <Route
             path="/admin/activities/:id/edit"
             element={
-              <ProtectedRoute>
+              <RequireAdmin>
                 <CreateActivity />
-              </ProtectedRoute>
+              </RequireAdmin>
             }
           />
           <Route
             path="/admin/users"
             element={
-              <ProtectedRoute>
+              <RequireAdmin>
                 <UserManagement />
-              </ProtectedRoute>
+              </RequireAdmin>
             }
           />
 

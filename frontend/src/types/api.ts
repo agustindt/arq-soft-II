@@ -1,89 +1,75 @@
-import { User } from "./auth";
-
-// Pagination Types
-export interface Pagination {
-  page: number;
-  limit: number;
-  total: number;
-  total_pages: number;
+export interface User {
+  id: number;
+  username: string;
+  email: string;
+  role: string;
+  createdAt: string;
+  updatedAt: string;
 }
 
-// Users API Types
-export interface UsersResponse {
-  users: User[];
-  pagination: Pagination;
+export interface LoginRequest {
+  email: string;
+  password: string;
 }
 
-// Health Check Response
-export interface HealthResponse {
-  status: string;
-  message: string;
-  service?: string;
+export interface LoginResponse {
+  token: string;
+  user: User;
 }
 
-// Dashboard Stats
-export interface DashboardStats {
-  totalUsers: number;
-  recentUsers: User[];
+export interface RegisterRequest {
+  username: string;
+  email: string;
+  password: string;
 }
 
-// API Status
-export interface ApiStatus {
-  status: "online" | "error";
-  message: string;
+export interface RegisterResponse {
+  user: User;
 }
 
-// Form Errors
-export interface FormErrors {
-  [key: string]: string;
-}
-
-// Message Type (for alerts)
-export interface Message {
-  type: "success" | "error" | "info" | "warning" | "";
-  text: string;
-}
-
-// Activity Types
 export interface Activity {
   id: string;
   name: string;
   description: string;
   category: string;
-  difficulty: "beginner" | "intermediate" | "advanced";
+  difficulty: string;
   location: string;
+  duration: number;
   price: number;
-  duration: number; // in minutes
-  max_capacity: number;
+  maxCapacity: number;
   instructor?: string;
-  schedule?: string[];
-  equipment?: string[];
-  image_url?: string;
-  is_active: boolean;
-  created_by?: number;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ActivitiesResponse {
-  activities: Activity[];
-  count: number;
+  dateCreated?: string;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface ActivityResponse {
   activity: Activity;
 }
 
-// Reservation Types
+export interface ActivityListResponse {
+  activities: Activity[];
+}
+
+export interface CreateActivityRequest {
+  name: string;
+  description: string;
+  category: string;
+  difficulty: string;
+  location: string;
+  duration: number;
+  price: number;
+  maxCapacity: number;
+}
+
+export interface UpdateActivityRequest extends CreateActivityRequest {}
+
 export interface Reservation {
   id: string;
-  users_id: number[];
-  cupo: number;
-  actividad: string; // Activity ID
-  date: string; // ISO date string
-  status: "Pendiente" | "confirmada" | "cancelada";
-  created_at: string;
-  updated_at: string;
+  userId: number;
+  activityId: string;
+  participants: number;
+  date: string;
 }
 
 export interface ReservationsResponse {
@@ -109,13 +95,16 @@ export interface SearchFilters {
   price_min?: number;
   price_max?: number;
   page?: number;
-  size?: number;
+  limit?: number;
+  sort?: string;
 }
 
 export interface SearchResult {
   query: string;
   results: Activity[];
   total_found: number;
+  page?: number;
+  limit?: number;
   timestamp: string;
 }
 
@@ -141,5 +130,3 @@ export const DIFFICULTY_LEVELS = [
   "intermediate",
   "advanced",
 ] as const;
-
-export type DifficultyLevel = typeof DIFFICULTY_LEVELS[number];

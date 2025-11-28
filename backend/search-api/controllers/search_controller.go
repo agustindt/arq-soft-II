@@ -4,20 +4,13 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-
-	"search-api/services"
 )
 
 type SearchController struct {
-	service *services.SearchService
-}
-
-func NewSearchController(s *services.SearchService) *SearchController {
-	return &SearchController{service: s}
+	service SearchService
 }
 
 func (c *SearchController) HandleSearch(w http.ResponseWriter, r *http.Request) {
-	// Parﾃ｡metros de bﾃｺsqueda - aceptar tanto 'q' como 'query' para compatibilidad
 	query := r.URL.Query().Get("q")
 	if query == "" {
 		query = r.URL.Query().Get("query")
@@ -34,7 +27,7 @@ func (c *SearchController) HandleSearch(w http.ResponseWriter, r *http.Request) 
 		filters["difficulty"] = difficulty
 	}
 
-	// Paginaciﾃｳn
+	// Paginación
 	page := 1
 	if p := r.URL.Query().Get("page"); p != "" {
 		var pageNum int
@@ -44,16 +37,25 @@ func (c *SearchController) HandleSearch(w http.ResponseWriter, r *http.Request) 
 	}
 	filters["page"] = page
 
-	size := 10
-	if s := r.URL.Query().Get("size"); s != "" {
-		var sizeNum int
-		if _, err := fmt.Sscanf(s, "%d", &sizeNum); err == nil && sizeNum > 0 && sizeNum <= 100 {
-			size = sizeNum
+	limit := 10
+	if l := r.URL.Query().Get("limit"); l != "" {
+		var limitNum int
+		if _, err := fmt.Sscanf(l, "%d", &limitNum); err == nil && limitNum > 0 && limitNum <= 100 {
+			limit = limitNum
+		}
+	} else if legacy := r.URL.Query().Get("size"); legacy != "" { // compatibilidad
+		var legacyNum int
+		if _, err := fmt.Sscanf(legacy, "%d", &legacyNum); err == nil && legacyNum > 0 && legacyNum <= 100 {
+			limit = legacyNum
 		}
 	}
-	filters["size"] = size
+	filters["limit"] = limit
 
-	// Realizar bﾃｺsqueda
+	if sort := r.URL.Query().Get("sort"); sort != "" {
+		filters["sort"] = sort
+	}
+
+	// Realizar búsqueda
 	result, err := c.service.Search(query, filters)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error al buscar: %v", err), http.StatusInternalServerError)

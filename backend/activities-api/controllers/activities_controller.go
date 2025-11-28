@@ -2,7 +2,9 @@
 
 import (
 	"activities-api/domain"
+	"activities-api/services"
 	"context"
+	"errors"
 	"net/http"
 	"strings"
 
@@ -33,7 +35,7 @@ func NewActivitiesController(activitiesService ActivitiesService) *ActivitiesCon
 	}
 }
 
-// GetActivities maneja GET /activities - Lista actividades activas
+// GetActivities maneja GET /activities
 func (c *ActivitiesController) GetActivities(ctx *gin.Context) {
 	activities, err := c.service.List(ctx.Request.Context())
 	if err != nil {
@@ -50,12 +52,12 @@ func (c *ActivitiesController) GetActivities(ctx *gin.Context) {
 	})
 }
 
-// GetAllActivities maneja GET /activities/all - Lista todas las actividades (admin only)
+// GetAllActivities maneja GET /activities/all
 func (c *ActivitiesController) GetAllActivities(ctx *gin.Context) {
 	activities, err := c.service.ListAll(ctx.Request.Context())
 	if err != nil {
 		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to fetch activities",
+			"error":   "Failed to fetch all activities",
 			"details": err.Error(),
 		})
 		return
@@ -87,6 +89,21 @@ func (c *ActivitiesController) CreateActivity(ctx *gin.Context) {
 
 	activity, err := c.service.Create(ctx.Request.Context(), newActivity)
 	if err != nil {
+
+		if errors.Is(err, services.ErrOwnerNotFound) {
+			ctx.JSON(http.StatusUnauthorized, gin.H{
+				"error": "Owner not found or unauthorized",
+			})
+			return
+		}
+
+		if errors.Is(err, services.ErrOwnerForbidden) {
+			ctx.JSON(http.StatusForbidden, gin.H{
+				"error": "You are not allowed to modify this resource",
+			})
+			return
+		}
+
 		statusCode := http.StatusInternalServerError
 		if strings.Contains(err.Error(), "validation") || strings.Contains(err.Error(), "required") {
 			statusCode = http.StatusBadRequest
@@ -136,7 +153,7 @@ func (c *ActivitiesController) GetActivityByID(ctx *gin.Context) {
 	})
 }
 
-// UpdateActivity maneja PUT /activities/:id - Actualiza actividad existente
+// UpdateActivity maneja PUT /activities/:id
 func (c *ActivitiesController) UpdateActivity(ctx *gin.Context) {
 	id := ctx.Param("id")
 	if id == "" {
@@ -164,6 +181,16 @@ func (c *ActivitiesController) UpdateActivity(ctx *gin.Context) {
 			return
 		}
 
+		if errors.Is(err, services.ErrOwnerNotFound) {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Owner not found or unauthorized"})
+			return
+		}
+
+		if errors.Is(err, services.ErrOwnerForbidden) {
+			ctx.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to modify this resource"})
+			return
+		}
+
 		statusCode := http.StatusInternalServerError
 		if strings.Contains(err.Error(), "validation") || strings.Contains(err.Error(), "required") {
 			statusCode = http.StatusBadRequest
@@ -182,7 +209,7 @@ func (c *ActivitiesController) UpdateActivity(ctx *gin.Context) {
 	})
 }
 
-// DeleteActivity maneja DELETE /activities/:id - Elimina actividad por ID
+// DeleteActivity maneja DELETE /activities/:id
 func (c *ActivitiesController) DeleteActivity(ctx *gin.Context) {
 	id := ctx.Param("id")
 	if id == "" {
@@ -202,6 +229,16 @@ func (c *ActivitiesController) DeleteActivity(ctx *gin.Context) {
 			return
 		}
 
+		if errors.Is(err, services.ErrOwnerNotFound) {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Owner not found or unauthorized"})
+			return
+		}
+
+		if errors.Is(err, services.ErrOwnerForbidden) {
+			ctx.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to modify this resource"})
+			return
+		}
+
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to delete activity",
 			"details": err.Error(),
@@ -214,7 +251,7 @@ func (c *ActivitiesController) DeleteActivity(ctx *gin.Context) {
 	})
 }
 
-// ToggleActiveActivity maneja PATCH /activities/:id/toggle - Activa/desactiva actividad
+// ToggleActiveActivity maneja PATCH /activities/:id/toggle
 func (c *ActivitiesController) ToggleActiveActivity(ctx *gin.Context) {
 	id := ctx.Param("id")
 	if id == "" {
@@ -233,6 +270,16 @@ func (c *ActivitiesController) ToggleActiveActivity(ctx *gin.Context) {
 			return
 		}
 
+		if errors.Is(err, services.ErrOwnerNotFound) {
+			ctx.JSON(http.StatusUnauthorized, gin.H{"error": "Owner not found or unauthorized"})
+			return
+		}
+
+		if errors.Is(err, services.ErrOwnerForbidden) {
+			ctx.JSON(http.StatusForbidden, gin.H{"error": "You are not allowed to modify this resource"})
+			return
+		}
+
 		ctx.JSON(http.StatusInternalServerError, gin.H{
 			"error":   "Failed to toggle activity status",
 			"details": err.Error(),
@@ -240,47 +287,8 @@ func (c *ActivitiesController) ToggleActiveActivity(ctx *gin.Context) {
 		return
 	}
 
-	status := "deactivated"
-	if toggled.IsActive {
-		status = "activated"
-	}
-
 	ctx.JSON(http.StatusOK, gin.H{
 		"activity": toggled,
-		"message":  "Activity " + status + " successfully",
-	})
-}
-
-// GetActivitiesByCategory maneja GET /activities/category/:category - Filtra por categoría
-func (c *ActivitiesController) GetActivitiesByCategory(ctx *gin.Context) {
-	category := ctx.Param("category")
-	if category == "" {
-		ctx.JSON(http.StatusBadRequest, gin.H{
-			"error": "Category parameter is required",
-		})
-		return
-	}
-
-	activities, err := c.service.GetByCategory(ctx.Request.Context(), category)
-	if err != nil {
-		ctx.JSON(http.StatusInternalServerError, gin.H{
-			"error":   "Failed to fetch activities by category",
-			"details": err.Error(),
-		})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, gin.H{
-		"category":   category,
-		"activities": activities,
-		"count":      len(activities),
-	})
-}
-
-// HealthCheck maneja GET /healthz - Health check endpoint
-func (c *ActivitiesController) HealthCheck(ctx *gin.Context) {
-	ctx.JSON(http.StatusOK, gin.H{
-		"status":  "ok",
-		"service": "activities-api",
+		"message":  "Activity state toggled successfully",
 	})
 }

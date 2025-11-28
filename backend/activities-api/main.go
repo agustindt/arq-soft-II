@@ -68,7 +68,7 @@ func main() {
 		cfg.RabbitMQ.Port,
 		cfg.RabbitMQ.Exchange,
 		activitiesRepo, // necesario para obtener datos completos al publicar
-	)
+	)xq
 
 	// Crear cola de publicación con workers y retries
 	publishQueue := services.NewPublishQueue(rabbitClient, 200, 3, 200*time.Millisecond)

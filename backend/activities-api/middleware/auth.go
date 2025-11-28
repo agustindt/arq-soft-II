@@ -2,6 +2,7 @@
 
 import (
 	"activities-api/utils"
+	"context"
 	"net/http"
 	"strings"
 
@@ -39,9 +40,13 @@ func AdminOnly(usersAPI string) gin.HandlerFunc {
 			return
 		}
 
-		// Setear información del usuario en el contexto
+		// Setear información del usuario en el contexto de Gin y en el request
 		c.Set("user_id", claims.UserID)
 		c.Set("user_role", claims.Role)
+
+		reqCtx := context.WithValue(c.Request.Context(), utils.ContextUserIDKey, claims.UserID)
+		reqCtx = context.WithValue(reqCtx, utils.ContextUserRoleKey, claims.Role)
+		c.Request = c.Request.WithContext(reqCtx)
 
 		c.Next()
 	}

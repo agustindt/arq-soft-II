@@ -23,12 +23,20 @@ import {
   AdminPanelSettings as AdminIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../../contexts/AuthContext";
+import { getUserRoleFromToken } from "../../utils/jwtUtils";
 
 function Navbar(): JSX.Element {
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
+
+  const roleFromToken = token ? getUserRoleFromToken(token) : null;
+  const isAdmin =
+    roleFromToken === "admin" ||
+    roleFromToken === "root" ||
+    roleFromToken === "super_admin" ||
+    user?.role === "admin";
 
   const handleMenuOpen = (event: MouseEvent<HTMLButtonElement>): void => {
     setAnchorEl(event.currentTarget);
@@ -56,26 +64,13 @@ function Navbar(): JSX.Element {
       <Toolbar sx={{ px: { xs: 2, sm: 3 } }}>
         <Typography
           variant="h6"
-          component="div"
-          sx={{
-            flexGrow: 1,
-            cursor: "pointer",
-            display: "flex",
-            alignItems: "center",
-            fontWeight: 700,
-            fontSize: "1.25rem",
-            transition: "opacity 0.2s",
-            "&:hover": {
-              opacity: 0.8,
-            },
-          }}
-          onClick={() => navigate("/activities")}
+          sx={{ flexGrow: 1, fontWeight: "bold", cursor: "pointer" }}
+          onClick={() => navigate("/dashboard")}
         >
-          🏃‍♀️ Sports Activities
+          FitLife
         </Typography>
 
-        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.5, sm: 1 } }}>
-          {/* Navigation Buttons */}
+        <Box sx={{ display: "flex", gap: 2, alignItems: "center" }}>
           <Button
             color="inherit"
             startIcon={<ActivitiesIcon />}
@@ -97,6 +92,7 @@ function Navbar(): JSX.Element {
           >
             Activities
           </Button>
+
           <Button
             color="inherit"
             startIcon={<SearchIcon />}
@@ -118,6 +114,7 @@ function Navbar(): JSX.Element {
           >
             Search
           </Button>
+
           <Button
             color="inherit"
             startIcon={<BookIcon />}
@@ -139,7 +136,8 @@ function Navbar(): JSX.Element {
           >
             My Activities
           </Button>
-          {user?.role === "admin" && (
+
+          {isAdmin && (
             <Button
               color="inherit"
               startIcon={<AdminIcon />}
@@ -162,6 +160,7 @@ function Navbar(): JSX.Element {
               Admin
             </Button>
           )}
+
           <Button
             color="inherit"
             startIcon={<DashboardIcon />}
@@ -184,81 +183,45 @@ function Navbar(): JSX.Element {
             Dashboard
           </Button>
 
-          {/* User Menu */}
+          {/* Perfil */}
           <IconButton
-            size="large"
-            aria-label="account of current user"
-            aria-controls="menu-appbar"
-            aria-haspopup="true"
-            onClick={handleMenuOpen}
             color="inherit"
-            sx={{
-              ml: 1,
-              transition: "transform 0.2s",
-              "&:hover": {
-                transform: "scale(1.1)",
-              },
-            }}
+            onClick={handleMenuOpen}
+            size="large"
+            sx={{ ml: 1 }}
           >
-            <Avatar
-              sx={{
-                width: 36,
-                height: 36,
-                bgcolor: "rgba(255,255,255,0.2)",
-                border: "2px solid rgba(255,255,255,0.3)",
-                fontWeight: 600,
-              }}
-            >
-              {user?.first_name?.charAt(0)?.toUpperCase() ||
-                user?.username?.charAt(0)?.toUpperCase() ||
-                "U"}
+            <Avatar sx={{ bgcolor: "secondary.main" }}>
+              <AccountCircleIcon />
             </Avatar>
           </IconButton>
 
           <Menu
-            id="menu-appbar"
             anchorEl={anchorEl}
+            open={isMenuOpen}
+            onClose={handleMenuClose}
             anchorOrigin={{
               vertical: "bottom",
               horizontal: "right",
             }}
-            keepMounted
             transformOrigin={{
               vertical: "top",
               horizontal: "right",
             }}
-            open={isMenuOpen}
-            onClose={handleMenuClose}
-            PaperProps={{
-              sx: {
-                mt: 1.5,
-                minWidth: 220,
-                borderRadius: 2,
-                boxShadow: "0 8px 24px rgba(0, 0, 0, 0.15)",
-                border: "1px solid rgba(0, 0, 0, 0.05)",
-              },
-            }}
+            sx={{ mt: 1 }}
           >
-            <Box sx={{ px: 2, py: 1 }}>
-              <Typography variant="subtitle2" color="textSecondary">
-                {user?.email}
-              </Typography>
-              <Typography variant="body2" fontWeight="bold">
-                {user?.first_name} {user?.last_name}
-              </Typography>
-            </Box>
-            <Divider />
             <MenuItem onClick={() => handleNavigation("/profile")}>
-              <AccountCircleIcon sx={{ mr: 1 }} />
+              <PersonIcon fontSize="small" sx={{ mr: 1 }} />
               Profile
             </MenuItem>
             <MenuItem onClick={() => handleNavigation("/extended-profile")}>
-              <PersonIcon sx={{ mr: 1 }} />
+              <PersonIcon fontSize="small" sx={{ mr: 1 }} />
               Extended Profile
             </MenuItem>
+
             <Divider />
+
             <MenuItem onClick={handleLogout}>
-              <LogoutIcon sx={{ mr: 1 }} />
+              <LogoutIcon fontSize="small" sx={{ mr: 1 }} />
               Logout
             </MenuItem>
           </Menu>
