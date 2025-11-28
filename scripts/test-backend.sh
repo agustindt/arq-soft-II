@@ -73,10 +73,10 @@ echo -e "${BLUE}========================================${NC}\n"
 # ===== Health Checks =====
 echo -e "${YELLOW}🏥 Health Checks${NC}"
 
-test_http "Users API health check" "GET" "http://localhost:8081/health" "200"
+test_http "Users API health check" "GET" "http://localhost:8081/api/v1/health" "200"
 test_http "Activities API health check" "GET" "http://localhost:8082/healthz" "200"
 test_http "Search API health check" "GET" "http://localhost:8083/health" "200"
-test_http "Reservations API health check" "GET" "http://localhost:8080/health" "200"
+test_http "Reservations API health check" "GET" "http://localhost:8080/healthz" "200"
 
 echo ""
 
