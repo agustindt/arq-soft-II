@@ -61,8 +61,12 @@ export const searchService = {
       params.append("page", filters.page.toString());
     }
 
-    if (filters.size) {
-      params.append("size", filters.size.toString());
+    if (filters.limit) {
+      params.append("limit", filters.limit.toString());
+    }
+
+    if (filters.sort) {
+      params.append("sort", filters.sort);
     }
 
     const queryString = params.toString();

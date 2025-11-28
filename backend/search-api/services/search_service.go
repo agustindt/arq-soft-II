@@ -14,24 +14,51 @@ import (
 type SearchService struct {
 	cache      *utils.Cache
 	solrClient *clients.SolrClient
+	ttl        time.Duration
 }
 
 type SearchResult struct {
 	Query      string                 `json:"query"`
 	Results    []clients.SolrDocument `json:"results"`
 	TotalFound int                    `json:"total_found"`
+	Page       int                    `json:"page"`
+	Limit      int                    `json:"limit"`
 	Timestamp  string                 `json:"timestamp"`
 }
 
-func NewSearchService(c *utils.Cache, solr *clients.SolrClient) *SearchService {
+func NewSearchService(c *utils.Cache, solr *clients.SolrClient, ttl time.Duration) *SearchService {
+	if ttl <= 0 {
+		ttl = 30 * time.Second
+	}
+
 	return &SearchService{
 		cache:      c,
 		solrClient: solr,
+		ttl:        ttl,
 	}
 }
 
 // Search realiza una bﾃｺsqueda en Solr con cache
 func (s *SearchService) Search(query string, filters map[string]interface{}) (*SearchResult, error) {
+	// Normalizar paginación y ordenamiento
+	page := 1
+	if p, ok := filters["page"].(int); ok && p > 0 {
+		page = p
+	}
+	limit := 10
+	if l, ok := filters["limit"].(int); ok && l > 0 && l <= 100 {
+		limit = l
+	}
+	sort := ""
+	if srt, ok := filters["sort"].(string); ok {
+		sort = srt
+	}
+	filters["page"] = page
+	filters["limit"] = limit
+	if sort != "" {
+		filters["sort"] = sort
+	}
+
 	// Generar key de cache basada en query y filtros
 	cacheKey := s.generateCacheKey(query, filters)
 
@@ -57,12 +84,14 @@ func (s *SearchService) Search(query string, filters map[string]interface{}) (*S
 		Query:      query,
 		Results:    solrResp.Response.Docs,
 		TotalFound: solrResp.Response.NumFound,
+		Page:       page,
+		Limit:      limit,
 		Timestamp:  time.Now().Format(time.RFC3339),
 	}
 
 	// Guardar en cachﾃｩ
 	data, _ := json.Marshal(result)
-	if err := s.cache.Set(cacheKey, data, 30*time.Second); err != nil {
+	if err := s.cache.Set(cacheKey, data, s.ttl); err != nil {
 		log.Printf("笞・・ No se pudo guardar en cachﾃｩ: %v", err)
 	}
 
@@ -146,8 +175,12 @@ func (s *SearchService) generateCacheKey(query string, filters map[string]interf
 		parts = append(parts, fmt.Sprintf("page:%d", page))
 	}
 
-	if size, ok := filters["size"].(int); ok {
-		parts = append(parts, fmt.Sprintf("size:%d", size))
+	if limit, ok := filters["limit"].(int); ok {
+		parts = append(parts, fmt.Sprintf("limit:%d", limit))
+	}
+
+	if sort, ok := filters["sort"].(string); ok && sort != "" {
+		parts = append(parts, "sort:"+sort)
 	}
 
 	return strings.Join(parts, ":")

@@ -27,6 +27,7 @@ import {
 } from "./components/Admin";
 import RootDashboard from "./pages/RootDashboard";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
+import { getUserRoleFromToken } from "./utils/jwtUtils";
 
 // Tema personalizado moderno para la app
 const theme = createTheme({
@@ -205,6 +206,23 @@ function PublicRoute({ children }: RouteProps): JSX.Element {
   return !isAuthenticated ? <>{children}</> : <Navigate to="/my-activities" />;
 }
 
+function RequireAdmin({ children }: RouteProps): JSX.Element {
+  const { isAuthenticated, loading, token } = useAuth();
+
+  if (loading) {
+    return <div>Loading...</div>;
+  }
+
+  const role = token ? getUserRoleFromToken(token) : null;
+  const isAdmin = role === "admin" || role === "root" || role === "super_admin";
+
+  if (!isAuthenticated || !isAdmin) {
+    return <Navigate to="/login" />;
+  }
+
+  return <>{children}</>;
+}
+
 function AppContent(): JSX.Element {
   const { isAuthenticated } = useAuth();
 
@@ -298,41 +316,41 @@ function AppContent(): JSX.Element {
           <Route
             path="/admin"
             element={
-              <ProtectedRoute>
+              <RequireAdmin>
                 <AdminDashboard />
-              </ProtectedRoute>
+              </RequireAdmin>
             }
           />
           <Route
             path="/admin/activities"
             element={
-              <ProtectedRoute>
+              <RequireAdmin>
                 <ActivityManagement />
-              </ProtectedRoute>
+              </RequireAdmin>
             }
           />
           <Route
             path="/admin/activities/new"
             element={
-              <ProtectedRoute>
+              <RequireAdmin>
                 <CreateActivity />
-              </ProtectedRoute>
+              </RequireAdmin>
             }
           />
           <Route
             path="/admin/activities/:id/edit"
             element={
-              <ProtectedRoute>
+              <RequireAdmin>
                 <CreateActivity />
-              </ProtectedRoute>
+              </RequireAdmin>
             }
           />
           <Route
             path="/admin/users"
             element={
-              <ProtectedRoute>
+              <RequireAdmin>
                 <UserManagement />
-              </ProtectedRoute>
+              </RequireAdmin>
             }
           />
 

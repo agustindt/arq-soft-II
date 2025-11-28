@@ -1,10 +1,13 @@
-﻿package services
+package services
 
 import (
+	"activities-api/clients"
 	"activities-api/domain"
+	"activities-api/utils"
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"strings"
 	"sync"
 	"time"
@@ -29,13 +32,55 @@ type ActivityPublisher interface {
 type ActivitiesServiceImpl struct {
 	repository ActivitiesRepository
 	publisher  ActivityPublisher
+	usersAPI   string
 }
 
 func NewActivitiesService(repository ActivitiesRepository, publisher ActivityPublisher) *ActivitiesServiceImpl {
+	usersAPI := os.Getenv("USERS_API_URL")
+	if usersAPI == "" {
+		usersAPI = "http://localhost:8081"
+	}
+
 	return &ActivitiesServiceImpl{
 		repository: repository,
 		publisher:  publisher,
+		usersAPI:   usersAPI,
 	}
+}
+
+var (
+	ErrOwnerNotFound  = errors.New("owner_not_found")
+	ErrOwnerForbidden = errors.New("owner_mismatch")
+)
+
+func (s *ActivitiesServiceImpl) requesterFromContext(ctx context.Context) (uint, string) {
+	uid, _ := ctx.Value(utils.ContextUserIDKey).(uint)
+	role, _ := ctx.Value(utils.ContextUserRoleKey).(string)
+	return uid, role
+}
+
+func (s *ActivitiesServiceImpl) validateOwner(ctx context.Context, ownerID uint, requesterID uint, requesterRole string) error {
+	if requesterRole == "admin" || requesterRole == "root" || requesterRole == "super_admin" {
+		return nil
+	}
+
+	if ownerID == 0 {
+		return ErrOwnerNotFound
+	}
+
+	userCtx, cancel := context.WithTimeout(ctx, 3*time.Second)
+	defer cancel()
+
+	user, err := clients.GetUserByIDWithContext(userCtx, s.usersAPI, ownerID)
+	if err != nil || user == nil {
+		return ErrOwnerNotFound
+	}
+
+	if user.ID != requesterID {
+		return ErrOwnerForbidden
+	}
+
+	return nil
 }
 
 // List obtiene todas las actividades activas
@@ -50,6 +95,15 @@ func (s *ActivitiesServiceImpl) ListAll(ctx context.Context) ([]domain.Activity,
 
 // Create valida y crea una nueva actividad
 func (s *ActivitiesServiceImpl) Create(ctx context.Context, activity domain.Activity) (domain.Activity, error) {
+	requesterID, requesterRole := s.requesterFromContext(ctx)
+	if activity.CreatedBy == 0 {
+		activity.CreatedBy = requesterID
+	}
+
+	if err := s.validateOwner(ctx, activity.CreatedBy, requesterID, requesterRole); err != nil {
+		return domain.Activity{}, err
+	}
+
 	// Ejecutar subtareas concurrentes: validación y enriquecimiento
 	type taskResult struct {
 		name string
@@ -184,6 +238,12 @@ func (s *ActivitiesServiceImpl) Update(ctx context.Context, id string, activity 
 		}
 	}
 
+	requesterID, requesterRole := s.requesterFromContext(ctx)
+	if err := s.validateOwner(ctx, existing.CreatedBy, requesterID, requesterRole); err != nil {
+		return domain.Activity{}, err
+	}
+
+	activity.CreatedBy = existing.CreatedBy
 	fmt.Printf("📋 Updating activity: id=%s, name=%s -> %s\n", existing.ID, existing.Name, activity.Name)
 
 	// Actualizar en el repositorio
@@ -215,6 +275,11 @@ func (s *ActivitiesServiceImpl) Delete(ctx context.Context, id string) error {
 		return fmt.Errorf("error fetching activity: %w", err)
 	}
 
+	requesterID, requesterRole := s.requesterFromContext(ctx)
+	if err := s.validateOwner(ctx, existing.CreatedBy, requesterID, requesterRole); err != nil {
+		return err
+	}
+
 	fmt.Printf("🗑️ Soft deleting activity: id=%s, name=%s\n", existing.ID, existing.Name)
 
 	// Soft delete
@@ -243,6 +308,11 @@ func (s *ActivitiesServiceImpl) HardDelete(ctx context.Context, id string) error
 	existing, err := s.repository.GetByID(tasksCtx, id)
 	if err != nil {
 		return fmt.Errorf("error fetching activity: %w", err)
+	}
+
+	requesterID, requesterRole := s.requesterFromContext(ctx)
+	if err := s.validateOwner(ctx, existing.CreatedBy, requesterID, requesterRole); err != nil {
+		return err
 	}
 
 	fmt.Printf("🗑️ PERMANENTLY deleting activity: id=%s, name=%s\n", existing.ID, existing.Name)

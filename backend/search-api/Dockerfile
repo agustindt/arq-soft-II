@@ -4,6 +4,10 @@ WORKDIR /app
 
 # Copy go.mod and go.sum from search-api directory
 COPY backend/search-api/go.mod backend/search-api/go.sum ./
+
+# Copy internal/ccache module (needed for go mod download due to replace directive)
+COPY backend/search-api/internal/ccache ./internal/ccache
+
 RUN go mod download
 
 # Copy the entire search-api directory
