@@ -36,7 +36,6 @@ function Navbar(): JSX.Element {
   const isAdmin =
     roleFromToken === "admin" ||
     roleFromToken === "root" ||
-    roleFromToken === "super_admin" ||
     user?.role === "admin";
 
   const handleMenuOpen = (event: MouseEvent<HTMLButtonElement>): void => {
@@ -83,7 +82,13 @@ function Navbar(): JSX.Element {
           🏃‍♀️ Sports Activities
         </Typography>
 
-        <Box sx={{ display: "flex", alignItems: "center", gap: { xs: 0.5, sm: 1 } }}>
+        <Box
+          sx={{
+            display: "flex",
+            alignItems: "center",
+            gap: { xs: 0.5, sm: 1 },
+          }}
+        >
           {/* Navigation Buttons */}
           <Button
             color="inherit"
@@ -155,10 +160,9 @@ function Navbar(): JSX.Element {
               startIcon={<AdminIcon />}
               onClick={() => navigate("/admin")}
               sx={{
-                backgroundColor:
-                  location.pathname.startsWith("/admin")
-                    ? "rgba(255,255,255,0.2)"
-                    : "transparent",
+                backgroundColor: location.pathname.startsWith("/admin")
+                  ? "rgba(255,255,255,0.2)"
+                  : "transparent",
                 borderRadius: 2,
                 px: 2,
                 py: 1,
@@ -180,10 +184,9 @@ function Navbar(): JSX.Element {
               startIcon={<SecurityIcon />}
               onClick={() => navigate("/root")}
               sx={{
-                backgroundColor:
-                  location.pathname.startsWith("/root")
-                    ? "rgba(255,255,255,0.2)"
-                    : "transparent",
+                backgroundColor: location.pathname.startsWith("/root")
+                  ? "rgba(255,255,255,0.2)"
+                  : "transparent",
                 borderRadius: 2,
                 px: 2,
                 py: 1,

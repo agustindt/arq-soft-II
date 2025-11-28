@@ -22,17 +22,20 @@ Successfully integrated PR #10 "Implement owner validation, caching updates, and
 **Implementation:** `backend/activities-api/services/activities_service.go`
 
 **Functionality:**
+
 - Users can only edit/delete/toggle activities they created
 - Admin, root, and super_admin roles bypass ownership checks
 - Validates owner on Create, Update, Delete, and ToggleActive operations
 
 **Error Handling:**
+
 ```go
 ErrOwnerNotFound  = "owner_not_found"    // 401 Unauthorized
 ErrOwnerForbidden = "owner_mismatch"     // 403 Forbidden
 ```
 
 **Files Modified:**
+
 - `backend/activities-api/services/activities_service.go` - Validation logic
 - `backend/activities-api/controllers/activities_controller.go` - Error handling
 - `backend/activities-api/middleware/auth.go` - Context keys
@@ -43,16 +46,19 @@ ErrOwnerForbidden = "owner_mismatch"     // 403 Forbidden
 **Implementation:** `backend/search-api/internal/ccache/`
 
 **New Module:**
+
 - Custom cache implementation using Go generics
 - Thread-safe with RWMutex
 - Configurable TTL and max size
 - Item expiration tracking
 
 **Files Added:**
+
 - `backend/search-api/internal/ccache/cache.go` - Cache implementation
 - `backend/search-api/internal/ccache/go.mod` - Module definition
 
 **Files Modified:**
+
 - `backend/search-api/utils/cache.go` - Enhanced caching logic
 - `backend/search-api/config/consumer.go` - Cache configuration
 - `backend/search-api/Dockerfile` - Fixed to copy internal/ccache before go mod download
@@ -62,11 +68,13 @@ ErrOwnerForbidden = "owner_mismatch"     // 403 Forbidden
 **Implementation:** `backend/search-api/services/search_service.go`
 
 **Parameters:**
+
 - `page`: Page number (default: 1)
 - `limit`: Results per page (default: 10, max: 100)
 - Normalized in all search responses
 
 **Frontend Integration:**
+
 - `frontend/src/components/Search/SearchPage.tsx` - Pagination UI
 - `frontend/src/services/searchService.ts` - API calls updated
 
@@ -75,6 +83,7 @@ ErrOwnerForbidden = "owner_mismatch"     // 403 Forbidden
 **File:** `backend/search-api/clients/activities_client.go` (NEW)
 
 **Purpose:**
+
 - HTTP client for search-api to communicate with activities-api
 - Enables enrichment of search results with activity data
 - Supports context-aware requests
@@ -84,6 +93,7 @@ ErrOwnerForbidden = "owner_mismatch"     // 403 Forbidden
 **File:** `backend/users-api/services/user_service_test.go` (NEW)
 
 **Coverage:**
+
 - User service test suite added
 - Complements existing test coverage
 
@@ -92,26 +102,31 @@ ErrOwnerForbidden = "owner_mismatch"     // 403 Forbidden
 ## 🔧 Conflicts Resolved
 
 ### 1. Frontend - Navbar.tsx
+
 **Conflict:** Admin panel visibility logic  
 **Resolution:** Used `isAdmin` variable (includes admin, root, super_admin)  
 **Rationale:** More robust than `user?.role === "admin"` alone
 
 **Before:**
+
 ```tsx
 {user?.role === "admin" && (
 ```
 
 **After:**
+
 ```tsx
 {/* Admin Panel - Solo para admins, root y super_admin */}
 {isAdmin && (
 ```
 
 ### 2. Dockerfile - search-api
+
 **Issue:** `go mod download` failed due to missing internal/ccache  
 **Fix:** Copy internal/ccache directory before running go mod download
 
 **Added:**
+
 ```dockerfile
 # Copy internal/ccache module (needed for go mod download due to replace directive)
 COPY backend/search-api/internal/ccache ./internal/ccache
@@ -122,13 +137,15 @@ COPY backend/search-api/internal/ccache ./internal/ccache
 ## 🧪 Testing Results
 
 ### Compilation ✅
+
 - ✅ activities-api: Compiled successfully
-- ✅ search-api: Compiled successfully  
+- ✅ search-api: Compiled successfully
 - ✅ frontend: Built successfully (231.31 kB gzipped)
 - ✅ users-api: No changes, still compiling
 - ✅ reservations-api: Dockerfile renamed, compiling
 
 ### Health Checks ✅
+
 ```
 Users API:        200 OK ✅
 Activities API:   200 OK ✅
@@ -137,6 +154,7 @@ Reservations API: 200 OK ✅
 ```
 
 ### JWT Tests ✅
+
 ```
 TestGenerateJWT                  PASS ✅
 TestValidateJWT_ValidToken       PASS ✅
@@ -153,13 +171,17 @@ Total: 10/10 tests passing
 ```
 
 ### Owner Validation ✅
+
 **Verified:** Logic implemented correctly
+
 - Admin/root/super_admin bypass validation ✅
 - Regular users validated against owner ID ✅
 - Error handling implemented ✅
 
 ### Search Caching & Pagination ✅
+
 **Verified:** Implementation complete
+
 - ccache module functioning ✅
 - Pagination parameters working ✅
 - Frontend UI updated ✅
@@ -169,6 +191,7 @@ Total: 10/10 tests passing
 ## 📊 Files Changed
 
 **Total:** 26 files
+
 - **Added:** 4 new files
 - **Modified:** 21 files
 - **Renamed:** 1 file (dockerfile → Dockerfile)
@@ -177,16 +200,16 @@ Total: 10/10 tests passing
 
 ### Critical Files
 
-| File | Type | Purpose |
-|------|------|---------|
-| `activities-api/utils/context_keys.go` | NEW | Context key constants |
-| `search-api/internal/ccache/cache.go` | NEW | Custom cache module |
-| `search-api/clients/activities_client.go` | NEW | Activities API client |
-| `users-api/services/user_service_test.go` | NEW | User service tests |
-| `activities-api/services/activities_service.go` | MODIFIED | Owner validation |
-| `search-api/services/search_service.go` | MODIFIED | Pagination |
-| `search-api/Dockerfile` | MODIFIED | Fixed build |
-| `frontend/src/components/Navbar/Navbar.tsx` | MODIFIED | Conflict resolved |
+| File                                            | Type     | Purpose               |
+| ----------------------------------------------- | -------- | --------------------- |
+| `activities-api/utils/context_keys.go`          | NEW      | Context key constants |
+| `search-api/internal/ccache/cache.go`           | NEW      | Custom cache module   |
+| `search-api/clients/activities_client.go`       | NEW      | Activities API client |
+| `users-api/services/user_service_test.go`       | NEW      | User service tests    |
+| `activities-api/services/activities_service.go` | MODIFIED | Owner validation      |
+| `search-api/services/search_service.go`         | MODIFIED | Pagination            |
+| `search-api/Dockerfile`                         | MODIFIED | Fixed build           |
+| `frontend/src/components/Navbar/Navbar.tsx`     | MODIFIED | Conflict resolved     |
 
 ---
 
@@ -241,21 +264,25 @@ Total: 10/10 tests passing
 ## 📝 Notes for Team
 
 ### Owner Validation
+
 - Users now see "You are not allowed to modify this resource" if they try to edit someone else's activity
 - Admins can still edit all activities
 - This improves security and data integrity
 
 ### Search Performance
+
 - ccache module provides faster search responses
 - Configurable TTL prevents stale data
 - Thread-safe implementation
 
 ### Pagination
+
 - Search results now paginated by default (10 per page)
 - Frontend UI allows navigation between pages
 - Max limit of 100 prevents excessive loads
 
 ### API Changes
+
 None - All changes are backwards compatible
 
 ---
@@ -280,4 +307,3 @@ None - All changes are backwards compatible
 **Status:** ✅ PRODUCTION READY
 
 All services are running, tested, and verified. Ready for use by the team.
-

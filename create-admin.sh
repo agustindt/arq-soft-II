@@ -127,18 +127,14 @@ case $option in
     echo ""
     echo "Selecciona el nuevo rol:"
     echo "1) user"
-    echo "2) moderator"
-    echo "3) admin"
-    echo "4) super_admin"
-    echo "5) root"
-    read -p "Opción [1-5]: " role_option
+    echo "2) admin"
+    echo "3) root"
+    read -p "Opción [1-3]: " role_option
 
     case $role_option in
       1) new_role="user" ;;
-      2) new_role="moderator" ;;
-      3) new_role="admin" ;;
-      4) new_role="super_admin" ;;
-      5) new_role="root" ;;
+      2) new_role="admin" ;;
+      3) new_role="root" ;;
       *) echo "${RED}Opción inválida${NC}"; exit 1 ;;
     esac
 

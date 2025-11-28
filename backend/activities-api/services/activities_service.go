@@ -60,7 +60,7 @@ func (s *ActivitiesServiceImpl) requesterFromContext(ctx context.Context) (uint,
 }
 
 func (s *ActivitiesServiceImpl) validateOwner(ctx context.Context, ownerID uint, requesterID uint, requesterRole string) error {
-	if requesterRole == "admin" || requesterRole == "root" || requesterRole == "super_admin" {
+	if requesterRole == "admin" || requesterRole == "root" {
 		return nil
 	}
 

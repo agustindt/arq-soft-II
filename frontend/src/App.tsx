@@ -214,7 +214,7 @@ function RequireAdmin({ children }: RouteProps): JSX.Element {
   }
 
   const role = token ? getUserRoleFromToken(token) : null;
-  const isAdmin = role === "admin" || role === "root" || role === "super_admin";
+  const isAdmin = role === "admin" || role === "root";
 
   if (!isAuthenticated || !isAdmin) {
     return <Navigate to="/login" />;
