@@ -18,15 +18,22 @@ type UserFilter struct {
 	Limit  int
 }
 
+// UsersByRole groups user counts by their role.
+type UsersByRole struct {
+	User       int64 `json:"user"`
+	Moderator  int64 `json:"moderator"`
+	Admin      int64 `json:"admin"`
+	SuperAdmin int64 `json:"super_admin"`
+	Root       int64 `json:"root"`
+}
+
 // UserStats represents aggregated counters for different user segments.
 type UserStats struct {
-	TotalUsers     int64
-	ActiveUsers    int64
-	InactiveUsers  int64
-	RootUsers      int64
-	AdminUsers     int64
-	ModeratorUsers int64
-	RegularUsers   int64
+	TotalUsers          int64       `json:"total_users"`
+	ActiveUsers         int64       `json:"active_users"`
+	InactiveUsers       int64       `json:"inactive_users"`
+	UsersByRole         UsersByRole `json:"users_by_role"`
+	RecentRegistrations int64       `json:"recent_registrations"`
 }
 
 // UserRepository exposes persistence operations for users.
@@ -198,16 +205,27 @@ func (r *userRepository) GetStats(ctx context.Context) (UserStats, error) {
 	if err := r.db.WithContext(ctx).Model(&models.User{}).Where("is_active = ?", false).Count(&stats.InactiveUsers).Error; err != nil {
 		return stats, err
 	}
-	if err := r.db.WithContext(ctx).Model(&models.User{}).Where("role = ?", "root").Count(&stats.RootUsers).Error; err != nil {
+	if err := r.db.WithContext(ctx).Model(&models.User{}).Where("role = ?", "root").Count(&stats.UsersByRole.Root).Error; err != nil {
 		return stats, err
 	}
-	if err := r.db.WithContext(ctx).Model(&models.User{}).Where("role = ?", "admin").Count(&stats.AdminUsers).Error; err != nil {
+	if err := r.db.WithContext(ctx).Model(&models.User{}).Where("role = ?", "admin").Count(&stats.UsersByRole.Admin).Error; err != nil {
 		return stats, err
 	}
-	if err := r.db.WithContext(ctx).Model(&models.User{}).Where("role = ?", "moderator").Count(&stats.ModeratorUsers).Error; err != nil {
+	if err := r.db.WithContext(ctx).Model(&models.User{}).Where("role = ?", "super_admin").Count(&stats.UsersByRole.SuperAdmin).Error; err != nil {
 		return stats, err
 	}
-	if err := r.db.WithContext(ctx).Model(&models.User{}).Where("role = ?", "user").Count(&stats.RegularUsers).Error; err != nil {
+	if err := r.db.WithContext(ctx).Model(&models.User{}).Where("role = ?", "moderator").Count(&stats.UsersByRole.Moderator).Error; err != nil {
+		return stats, err
+	}
+	if err := r.db.WithContext(ctx).Model(&models.User{}).Where("role = ?", "user").Count(&stats.UsersByRole.User).Error; err != nil {
+		return stats, err
+	}
+
+	// Recent registrations (last 7 days)
+	sevenDaysAgo := r.db.NowFunc().AddDate(0, 0, -7)
+	if err := r.db.WithContext(ctx).Model(&models.User{}).
+		Where("created_at >= ?", sevenDaysAgo).
+		Count(&stats.RecentRegistrations).Error; err != nil {
 		return stats, err
 	}
 

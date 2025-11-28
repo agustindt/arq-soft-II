@@ -251,7 +251,9 @@ function AdminDashboard(): JSX.Element {
                   <Stack direction="row" spacing={2} alignItems="center">
                     <PeopleIcon sx={{ fontSize: 40, color: "warning.main" }} />
                     <Box>
-                      <Typography variant="h4">{userStats.users_by_role.admin + userStats.users_by_role.moderator}</Typography>
+                      <Typography variant="h4">
+                        {(userStats?.users_by_role?.admin ?? 0) + (userStats?.users_by_role?.moderator ?? 0)}
+                      </Typography>
                       <Typography variant="body2" color="textSecondary">
                         Staff Members
                       </Typography>

@@ -2,15 +2,15 @@ FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
-# Copiar go.mod y go.sum desde el context (raíz del proyecto)
-COPY go.mod go.sum ./
+# Copy go.mod and go.sum from search-api directory
+COPY backend/search-api/go.mod backend/search-api/go.sum ./
 RUN go mod download
 
-# Copiar todo el código fuente desde el context
-COPY . .
+# Copy the entire search-api directory
+COPY backend/search-api/ ./
 
-# Construir el binario desde la raíz del módulo
-RUN CGO_ENABLED=0 GOOS=linux go build -o /main ./backend/search-api
+# Build the binary
+RUN CGO_ENABLED=0 GOOS=linux go build -o /main .
 
 FROM alpine:latest
 RUN apk --no-cache add ca-certificates curl

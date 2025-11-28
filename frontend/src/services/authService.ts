@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosResponse, AxiosError, InternalAxiosRequestConfig } from "axios";
+import axios, { AxiosInstance, AxiosResponse, AxiosError, AxiosRequestConfig } from "axios";
 import {
   LoginRequest,
   RegisterRequest,
@@ -46,7 +46,7 @@ const api: AxiosInstance = axios.create({
 
 // Interceptor para añadir token automáticamente y verificar expiración
 api.interceptors.request.use(
-  async (config: InternalAxiosRequestConfig) => {
+  async (config: AxiosRequestConfig) => {
     const token = localStorage.getItem("token");
 
     // Si no hay token, continuar sin autenticación
@@ -109,7 +109,7 @@ api.interceptors.response.use(
     return response;
   },
   async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & {
+    const originalRequest = error.config as AxiosRequestConfig & {
       _retry?: boolean;
     };
 
