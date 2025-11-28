@@ -80,6 +80,7 @@ export interface Reservation {
   users_id: number[];
   cupo: number;
   actividad: string; // Activity ID
+  schedule: string; // Specific schedule slot (e.g., "Lunes 20:00")
   date: string; // ISO date string
   status: "Pendiente" | "confirmada" | "cancelada";
   created_at: string;
@@ -97,8 +98,17 @@ export interface ReservationResponse {
 
 export interface CreateReservationRequest {
   activityId: string;
+  schedule: string; // Specific schedule slot (e.g., "Lunes 20:00")
   date: string; // ISO date string
   participants: number;
+}
+
+export interface ScheduleAvailability {
+  activity_id: string;
+  date: string;
+  availability: {
+    [schedule: string]: number; // "Lunes 20:00" -> 7 (available spots)
+  };
 }
 
 // Search Types

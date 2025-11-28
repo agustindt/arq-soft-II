@@ -67,8 +67,14 @@ func main() {
 	// start workers (use ctx so they can be cancelled on shutdown)
 	publishQueue.Start(ctx, 2)
 
+	// activities API URL from config
+	activitiesAPIURL := cfg.ActivitiesAPIURL
+	if activitiesAPIURL == "" {
+		activitiesAPIURL = "http://localhost:8082"
+	}
+
 	// services
-	ReservaService := services.NewReservasService(ReservasMongoRepo, publishQueue)
+	ReservaService := services.NewReservasService(ReservasMongoRepo, publishQueue, activitiesAPIURL)
 
 	// controllers
 	ReservaController := controllers.NewReservasController(&ReservaService)
@@ -102,6 +108,9 @@ func main() {
 
 	// DELETE /Reservas/:id - eliminar Reserva (usuario autenticado puede eliminar sus propias reservas)
 	router.DELETE("/reservas/:id", middleware.AuthRequired(usersAPI), ReservaController.DeleteReserva)
+
+	// GET /activities/:id/availability - obtener disponibilidad por horario
+	router.GET("/activities/:id/availability", ReservaController.GetScheduleAvailability)
 
 	// Configuración del server
 	srv := &http.Server{

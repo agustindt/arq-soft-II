@@ -12,6 +12,7 @@ type Reserva struct {
 	UsersID   []int              `json:"users_id" bson:"users_id"`
 	Cupo      int                `json:"cupo" bson:"cupo"`
 	Actividad string             `json:"actividad" bson:"actividad"`
+	Schedule  string             `json:"schedule" bson:"schedule"` // Horario específico
 	Date      time.Time          `json:"date" bson:"date"`
 	Status    string             `json:"status" bson:"status"` //Pendiente, confirmada, cancelada
 	CreatedAt time.Time          `json:"created_at" bson:"created_at"`
@@ -25,6 +26,7 @@ func (d Reserva) ToDomain() domain.Reserva {
 		UsersID:   d.UsersID,
 		Cupo:      d.Cupo,
 		Actividad: d.Actividad,
+		Schedule:  d.Schedule,
 		Date:      d.Date,
 		Status:    d.Status,
 		CreatedAt: d.CreatedAt,
@@ -45,6 +47,7 @@ func FromDomain(domainItem domain.Reserva) Reserva {
 		UsersID:   domainItem.UsersID,
 		Cupo:      domainItem.Cupo,
 		Actividad: domainItem.Actividad,
+		Schedule:  domainItem.Schedule,
 		Date:      domainItem.Date,
 		Status:    domainItem.Status,
 		CreatedAt: domainItem.CreatedAt,
