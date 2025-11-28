@@ -1,4 +1,4 @@
-package config
+﻿package config
 
 import (
 	"log"
@@ -31,7 +31,7 @@ type RabbitMQConfig struct {
 
 func Load() Config {
 	if err := godotenv.Load(); err != nil {
-		log.Println("⚠️  No .env file found or error loading .env file")
+		log.Println("⚠️ No .env file found or error loading .env file")
 	}
 
 	return Config{

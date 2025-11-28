@@ -32,13 +32,14 @@ import (
 	"net/http"
 	"os"
 
-	"arq-soft-II/backend/search-api/clients"
-	"arq-soft-II/backend/search-api/config"
-	"arq-soft-II/backend/search-api/controllers"
-	"arq-soft-II/backend/search-api/services"
-	"arq-soft-II/config/cache"
-	"arq-soft-II/config/httpx"
-	"arq-soft-II/config/rabbitmq"
+	"search-api/clients"
+	"search-api/config"
+	"search-api/controllers"
+	"search-api/middleware"
+	"search-api/services"
+	"search-api/utils"
+
+	amqp "github.com/rabbitmq/amqp091-go"
 )
 
 func main() {
@@ -47,19 +48,19 @@ func main() {
 		port = "8083"
 	}
 
-	// 🔹 Conectarse a Memcached
+	// 隼 Conectarse a Memcached
 	memcachedURL := os.Getenv("MEMCACHED_URL")
 	if memcachedURL == "" {
 		memcachedURL = "memcached:11211" // valor por defecto si no hay env
 	}
 
-	memc, err := cache.New(memcachedURL)
+	memc, err := utils.NewCache(memcachedURL)
 	if err != nil {
-		log.Fatal("❌ Error conectando con Memcached:", err)
+		log.Fatal("笶・Error conectando con Memcached:", err)
 	}
-	defer log.Println("✅ Conexión Memcached cerrada.")
+	defer log.Println("笨・Conexiﾃｳn Memcached cerrada.")
 
-	// 🔹 Conectarse a Solr
+	// 隼 Conectarse a Solr
 	solrURL := os.Getenv("SOLR_URL")
 	if solrURL == "" {
 		solrURL = "http://solr:8983/solr"
@@ -73,35 +74,29 @@ func main() {
 
 	// Health check de Solr
 	if err := solrClient.HealthCheck(); err != nil {
-		log.Printf("⚠️  Warning: Solr health check failed: %v", err)
+		log.Printf("笞・・ Warning: Solr health check failed: %v", err)
 	} else {
-		log.Printf("✅ Conexión con Solr OK: %s/%s", solrURL, solrCore)
+		log.Printf("笨・Conexiﾃｳn con Solr OK: %s/%s", solrURL, solrCore)
 	}
 
-	// 🔹 Crear service y controller con Solr
+	// 隼 Crear service y controller con Solr
 	service := services.NewSearchService(memc, solrClient)
 	controller := controllers.NewSearchController(service)
 
-	// 🔹 Conectarse a RabbitMQ
+	// 隼 Conectarse a RabbitMQ
 	rabbitURL := os.Getenv("RABBITMQ_URL")
 	if rabbitURL == "" {
 		rabbitURL = "amqp://admin:admin@rabbitmq:5672/" // valor por defecto
 	}
 
-	mq, err := rabbitmq.New(rabbitURL)
+	conn, err := amqp.Dial(rabbitURL)
 	if err != nil {
-		log.Fatal("❌ Error conectando a RabbitMQ:", err)
+		log.Fatal("笶・Error conectando a RabbitMQ:", err)
 	}
-	defer mq.Close()
-
-	// Declarar exchange y queue
-	err = mq.DeclareSetup("entity.events", "search-sync", "activities.*")
-	if err != nil {
-		log.Fatal("❌ Error declarando exchange/queue:", err)
-	}
+	defer conn.Close()
 
 	// Iniciar el consumer (escucha eventos de Activities)
-	config.StartRabbitConsumer(mq, service)
+	config.StartRabbitConsumer(conn, service)
 
 	// CORS middleware function
 	corsMiddleware := func(next http.HandlerFunc) http.HandlerFunc {
@@ -119,7 +114,7 @@ func main() {
 		}
 	}
 
-	// 🔹 Endpoints públicos
+	// 隼 Endpoints pﾃｺblicos
 	http.HandleFunc("/health", corsMiddleware(func(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusOK)
 		fmt.Fprint(w, "Search API is running")
@@ -132,14 +127,14 @@ func main() {
 
 	http.HandleFunc("/search", corsMiddleware(controller.HandleSearch))
 
-	// 🔹 Endpoint interno protegido por X-Service-Token
-	http.Handle("/internal/reindex",
-		httpx.RequireServiceToken(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	// 隼 Endpoint interno protegido por X-Service-Token
+	http.HandleFunc("/internal/reindex",
+		middleware.RequireServiceToken(func(w http.ResponseWriter, r *http.Request) {
 			w.WriteHeader(http.StatusOK)
-			fmt.Fprint(w, "Petición interna autorizada (reindex OK)")
-		})),
+			fmt.Fprint(w, "Peticiﾃｳn interna autorizada (reindex OK)")
+		}),
 	)
 
-	log.Printf("🚀 Search API corriendo en puerto %s", port)
+	log.Printf("噫 Search API corriendo en puerto %s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))
 }

@@ -1,4 +1,4 @@
-// Package main implements the Activities API microservice.
+﻿// Package main implements the Activities API microservice.
 //
 // The Activities API manages sports activities with full CRUD operations and event-driven
 // communication. It publishes events to RabbitMQ whenever activities are created, updated,
@@ -26,12 +26,12 @@
 package main
 
 import (
-	"arq-soft-II/backend/activities-api/clients"
-	"arq-soft-II/backend/activities-api/config"
-	"arq-soft-II/backend/activities-api/controllers"
-	"arq-soft-II/backend/activities-api/middleware"
-	"arq-soft-II/backend/activities-api/repository"
-	"arq-soft-II/backend/activities-api/services"
+	"activities-api/clients"
+	"activities-api/config"
+	"activities-api/controllers"
+	"activities-api/middleware"
+	"activities-api/repository"
+	"activities-api/services"
 	"context"
 	"log"
 	"net/http"
@@ -119,16 +119,16 @@ func main() {
 		IdleTimeout:       60 * time.Second,
 	}
 
-	log.Printf("✅ Activities API listening on port %s", cfg.Port)
+	log.Printf("✁EActivities API listening on port %s", cfg.Port)
 	log.Printf("📊 Health check: http://localhost:%s/healthz", cfg.Port)
 	log.Printf("🏃 Activities API: http://localhost:%s/activities", cfg.Port)
-	log.Printf("🗄️  MongoDB: %s/%s", cfg.Mongo.URI, cfg.Mongo.DB)
+	log.Printf("🗄�E�E MongoDB: %s/%s", cfg.Mongo.URI, cfg.Mongo.DB)
 	log.Printf("🐰 RabbitMQ: %s:%s (exchange: %s)", cfg.RabbitMQ.Host, cfg.RabbitMQ.Port, cfg.RabbitMQ.Exchange)
 
 	// Iniciar servidor en goroutine para poder manejar shutdown
 	go func() {
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Fatalf("❌ Server error: %v", err)
+			log.Fatalf("❁EServer error: %v", err)
 		}
 	}()
 
@@ -145,7 +145,7 @@ func main() {
 
 	// Cerrar servidor HTTP
 	if err := srv.Shutdown(ctxShutdown); err != nil {
-		log.Printf("❌ Server shutdown failed: %v", err)
+		log.Printf("❁EServer shutdown failed: %v", err)
 	}
 
 	// Detener publish queue
@@ -158,9 +158,9 @@ func main() {
 	if rabbitClient != nil {
 		log.Println("⏳ Closing RabbitMQ connection...")
 		if err := rabbitClient.Close(); err != nil {
-			log.Printf("⚠️  Error closing RabbitMQ client: %v", err)
+			log.Printf("⚠ Error closing RabbitMQ client: %v", err)
 		}
 	}
 
-	log.Println("✅ Server exited properly")
+	log.Println("✁EServer exited properly")
 }
