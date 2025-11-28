@@ -23,6 +23,7 @@ import {
   AdminDashboard,
   ActivityManagement,
   CreateActivity,
+  UserManagement,
 } from "./components/Admin";
 import { AuthProvider, useAuth } from "./contexts/AuthContext";
 
@@ -322,6 +323,14 @@ function AppContent(): JSX.Element {
             element={
               <ProtectedRoute>
                 <CreateActivity />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin/users"
+            element={
+              <ProtectedRoute>
+                <UserManagement />
               </ProtectedRoute>
             }
           />
