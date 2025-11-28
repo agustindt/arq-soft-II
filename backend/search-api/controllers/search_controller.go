@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"arq-soft-II/backend/search-api/services"
+	"search-api/services"
 )
 
 type SearchController struct {
@@ -17,7 +17,7 @@ func NewSearchController(s *services.SearchService) *SearchController {
 }
 
 func (c *SearchController) HandleSearch(w http.ResponseWriter, r *http.Request) {
-	// Parámetros de búsqueda - aceptar tanto 'q' como 'query' para compatibilidad
+	// Parﾃ｡metros de bﾃｺsqueda - aceptar tanto 'q' como 'query' para compatibilidad
 	query := r.URL.Query().Get("q")
 	if query == "" {
 		query = r.URL.Query().Get("query")
@@ -34,7 +34,7 @@ func (c *SearchController) HandleSearch(w http.ResponseWriter, r *http.Request) 
 		filters["difficulty"] = difficulty
 	}
 
-	// Paginación
+	// Paginaciﾃｳn
 	page := 1
 	if p := r.URL.Query().Get("page"); p != "" {
 		var pageNum int
@@ -53,7 +53,7 @@ func (c *SearchController) HandleSearch(w http.ResponseWriter, r *http.Request) 
 	}
 	filters["size"] = size
 
-	// Realizar búsqueda
+	// Realizar bﾃｺsqueda
 	result, err := c.service.Search(query, filters)
 	if err != nil {
 		http.Error(w, fmt.Sprintf("Error al buscar: %v", err), http.StatusInternalServerError)

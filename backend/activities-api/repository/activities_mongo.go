@@ -1,8 +1,8 @@
-package repository
+﻿package repository
 
 import (
-	"arq-soft-II/backend/activities-api/dao"
-	"arq-soft-II/backend/activities-api/domain"
+	"activities-api/dao"
+	"activities-api/domain"
 	"context"
 	"errors"
 	"log"
@@ -37,7 +37,7 @@ func NewMongoActivitiesRepository(ctx context.Context, uri, dbName, collectionNa
 		return nil
 	}
 
-	log.Println("✅ Connected to MongoDB successfully")
+	log.Println("✁EConnected to MongoDB successfully")
 
 	return &MongoActivitiesRepository{
 		col: client.Database(dbName).Collection(collectionName),

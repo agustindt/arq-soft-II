@@ -24,11 +24,11 @@ import (
 	"log"
 	"os"
 
-	"arq-soft-II/backend/users-api/config"
-	"arq-soft-II/backend/users-api/controllers"
-	"arq-soft-II/backend/users-api/middleware"
-	"arq-soft-II/backend/users-api/repositories"
-	"arq-soft-II/backend/users-api/services"
+	"users-api/config"
+	"users-api/controllers"
+	"users-api/middleware"
+	"users-api/repositories"
+	"users-api/services"
 
 	"github.com/gin-gonic/gin"
 )
@@ -197,7 +197,7 @@ func main() {
 	log.Printf("🔐 JWT authentication enabled")
 	log.Printf("👤 Extended user profiles with avatar support")
 	log.Printf("📸 Avatar upload/management enabled")
-	log.Printf("🛡️  Role-based access control (user/moderator/admin/root)")
+	log.Printf("🛡 Role-based access control (user/moderator/admin/root)")
 	log.Printf("👨‍💼 Admin user management system")
 	log.Printf("📋 Available endpoints:")
 	log.Printf("   • API Documentation: http://localhost:%s/", port)

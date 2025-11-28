@@ -10,9 +10,9 @@ import (
 	"strings"
 	"time"
 
-	"arq-soft-II/backend/users-api/middleware"
-	"arq-soft-II/backend/users-api/models"
-	"arq-soft-II/backend/users-api/services"
+	"users-api/middleware"
+	"users-api/models"
+	"users-api/services"
 
 	"github.com/gin-gonic/gin"
 )

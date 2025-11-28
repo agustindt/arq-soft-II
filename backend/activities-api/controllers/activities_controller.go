@@ -1,7 +1,7 @@
-package controllers
+﻿package controllers
 
 import (
-	"arq-soft-II/backend/activities-api/domain"
+	"activities-api/domain"
 	"context"
 	"net/http"
 	"strings"

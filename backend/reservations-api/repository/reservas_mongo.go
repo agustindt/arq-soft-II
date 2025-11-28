@@ -1,11 +1,11 @@
 package repository
 
 import (
-	"arq-soft-II/backend/reservations-api/dao"
-	"arq-soft-II/backend/reservations-api/domain"
 	"context"
 	"errors"
 	"log"
+	"reservations-api/dao"
+	"reservations-api/domain"
 	"time"
 
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -57,7 +57,7 @@ func (r *MongoReservasRepository) List(ctx context.Context) ([]domain.Reserva, e
 	if err != nil {
 		return nil, err
 	}
-	defer cur.Close(ctx) // ⚠️ IMPORTANTE: Siempre cerrar el cursor para liberar recursos
+	defer cur.Close(ctx) // IMPORTANTE: Siempre cerrar el cursor para liberar recursos
 
 	// 📦 Decodificar resultados en slice de DAO (modelo DB)
 	// Usamos el modelo DAO porque maneja ObjectID y tags BSON

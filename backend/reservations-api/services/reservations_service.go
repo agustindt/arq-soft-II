@@ -1,7 +1,7 @@
 package services
 
 import (
-	"arq-soft-II/backend/reservations-api/domain"
+	"reservations-api/domain"
 	"context"
 	"errors"
 	"fmt"
@@ -58,7 +58,7 @@ func (s *ReservasServiceImpl) ListByUserID(ctx context.Context, userID int) ([]d
 
 // Create valida y crea un nuevo Reserva
 func (s *ReservasServiceImpl) Create(ctx context.Context, Reserva domain.Reserva) (domain.Reserva, error) {
-	// Ejecutar subtareas concurrentes: validación, cálculo de precio y enriquecimiento
+	// Ejecutar subtareas concurrentes: 4 validaciones independientes + registro de fecha
 	type taskResult struct {
 		name string
 		err  error
@@ -68,32 +68,55 @@ func (s *ReservasServiceImpl) Create(ctx context.Context, Reserva domain.Reserva
 	tasksCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
 	defer cancel()
 
-	resultsCh := make(chan taskResult, 3)
+	resultsCh := make(chan taskResult, 5)
 	var wg sync.WaitGroup
-	wg.Add(3)
+	wg.Add(5)
 
-	// Validación
+	// Validación 1: Activity
 	go func() {
 		defer wg.Done()
-		if err := s.validateReserva(Reserva); err != nil {
-			resultsCh <- taskResult{name: "validate", err: err}
+		if err := s.validateActivity(Reserva.Actividad); err != nil {
+			resultsCh <- taskResult{name: "validate_activity", err: err}
 			return
 		}
-		resultsCh <- taskResult{name: "validate", err: nil}
+		resultsCh <- taskResult{name: "validate_activity", err: nil}
 	}()
 
-	// Cálculo de precio (simulado)
+	// Validación 2: Date
 	go func() {
 		defer wg.Done()
-		price, err := s.calculatePrice(tasksCtx, Reserva)
-		resultsCh <- taskResult{name: "price", err: err, data: price}
+		if err := s.validateDate(Reserva.Date); err != nil {
+			resultsCh <- taskResult{name: "validate_date", err: err}
+			return
+		}
+		resultsCh <- taskResult{name: "validate_date", err: nil}
 	}()
 
-	// Enriquecimiento de datos (simulado)
+	// Validación 3: Quota
 	go func() {
 		defer wg.Done()
-		note, err := s.enrichData(tasksCtx, Reserva)
-		resultsCh <- taskResult{name: "enrich", err: err, data: note}
+		if err := s.validateQuota(Reserva.Cupo); err != nil {
+			resultsCh <- taskResult{name: "validate_quota", err: err}
+			return
+		}
+		resultsCh <- taskResult{name: "validate_quota", err: nil}
+	}()
+
+	// Validación 4: Users
+	go func() {
+		defer wg.Done()
+		if err := s.validateUsers(Reserva.UsersID); err != nil {
+			resultsCh <- taskResult{name: "validate_users", err: err}
+			return
+		}
+		resultsCh <- taskResult{name: "validate_users", err: nil}
+	}()
+
+	// Registro de fecha
+	go func() {
+		defer wg.Done()
+		note, err := s.registrarFecha(tasksCtx, Reserva)
+		resultsCh <- taskResult{name: "register_date", err: err, data: note}
 	}()
 
 	// cerrar el channel cuando las tareas terminen
@@ -102,31 +125,22 @@ func (s *ReservasServiceImpl) Create(ctx context.Context, Reserva domain.Reserva
 		close(resultsCh)
 	}()
 
-	var finalPrice float64
-	var finalNote string
+	var registroFecha string
 
 	for tr := range resultsCh {
 		if tr.err != nil {
 			cancel()
 			return domain.Reserva{}, fmt.Errorf("task %s failed: %w", tr.name, tr.err)
 		}
-		switch tr.name {
-		case "price":
-			if v, ok := tr.data.(float64); ok {
-				finalPrice = v
-			}
-		case "enrich":
+		if tr.name == "register_date" {
 			if v, ok := tr.data.(string); ok {
-				finalNote = v
+				registroFecha = v
 			}
 		}
 	}
 
-	if finalPrice > 0 {
-		fmt.Printf("calculated price: %f\n", finalPrice)
-	}
-	if finalNote != "" {
-		fmt.Printf("enrichment note: %s\n", finalNote)
+	if registroFecha != "" {
+		fmt.Printf("registro fecha: %s\n", registroFecha)
 	}
 
 	created, err := s.repository.Create(ctx, Reserva)
@@ -315,23 +329,57 @@ func (s *ReservasServiceImpl) validateReserva(Reserva domain.Reserva) error {
 	return nil
 }
 
-// calculatePrice realiza algún cálculo simulado de precio y respeta el context
-func (s *ReservasServiceImpl) calculatePrice(ctx context.Context, r domain.Reserva) (float64, error) {
-	base := 10.0
-	select {
-	case <-time.After(100 * time.Millisecond):
-		// continue
-	case <-ctx.Done():
-		return 0, ctx.Err()
+// validateActivity valida que la actividad tenga contenido válido
+func (s *ReservasServiceImpl) validateActivity(activity string) error {
+	if strings.TrimSpace(activity) == "" {
+		return errors.New("actividad is required and cannot be empty")
 	}
-	if strings.Contains(strings.ToLower(r.Actividad), "premium") {
-		base += 20.0
+	if len(activity) < 3 {
+		return errors.New("actividad must be at least 3 characters long")
 	}
-	return base, nil
+	if len(activity) > 255 {
+		return errors.New("actividad must not exceed 255 characters")
+	}
+	return nil
 }
 
-// enrichData simula una llamada externa para enriquecer la reserva
-func (s *ReservasServiceImpl) enrichData(ctx context.Context, r domain.Reserva) (string, error) {
+// validateDate valida que la fecha sea válida y futura
+func (s *ReservasServiceImpl) validateDate(date time.Time) error {
+	if date.IsZero() {
+		return errors.New("date is required and cannot be empty")
+	}
+	now := time.Now()
+	oneMinuteAgo := now.Add(-1 * time.Minute)
+	if date.Before(oneMinuteAgo) {
+		return errors.New("la fecha de la reserva debe ser posterior a la fecha actual")
+	}
+	return nil
+}
+
+// validateQuota valida que el cupo sea válido
+func (s *ReservasServiceImpl) validateQuota(cupo int) error {
+	if cupo <= 0 {
+		return errors.New("el cupo debe ser mayor a cero")
+	}
+	if cupo > 10000 {
+		return errors.New("el cupo no puede ser mayor a 10000")
+	}
+	return nil
+}
+
+// validateUsers valida que haya al menos un usuario
+func (s *ReservasServiceImpl) validateUsers(usersID []int) error {
+	if len(usersID) == 0 {
+		return errors.New("debe haber al menos un usuario en la reserva")
+	}
+	if len(usersID) > 5000 {
+		return errors.New("no puede haber más de 5000 usuarios en una reserva")
+	}
+	return nil
+}
+
+// registrarFecha registra la fecha de la reserva con un timestamp
+func (s *ReservasServiceImpl) registrarFecha(ctx context.Context, r domain.Reserva) (string, error) {
 	select {
 	case <-time.After(50 * time.Millisecond):
 		// continue

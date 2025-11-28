@@ -1,4 +1,4 @@
-package services
+﻿package services
 
 import (
 	"context"
@@ -95,7 +95,7 @@ func (q *PublishQueue) process(msg PublishMessage) {
 		err := q.underlying.Publish(attemptCtx, msg.Action, msg.ID)
 		cancel()
 		if err == nil {
-			fmt.Printf("✅ Published event: action=%s, activity_id=%s\n", msg.Action, msg.ID)
+			fmt.Printf("✁EPublished event: action=%s, activity_id=%s\n", msg.Action, msg.ID)
 			return
 		}
 		lastErr = err
@@ -103,5 +103,5 @@ func (q *PublishQueue) process(msg PublishMessage) {
 		time.Sleep(q.backoff * time.Duration(attempt))
 	}
 	// último intento fallido: log y continuar
-	fmt.Printf("❌ Publish failed after retries for id=%s action=%s: %v\n", msg.ID, msg.Action, lastErr)
+	fmt.Printf("❁EPublish failed after retries for id=%s action=%s: %v\n", msg.ID, msg.Action, lastErr)
 }

@@ -4,7 +4,7 @@ import (
 	"context"
 	"strings"
 
-	"arq-soft-II/backend/users-api/models"
+	"users-api/models"
 
 	"gorm.io/gorm"
 )

@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	"arq-soft-II/backend/reservations-api/domain"
+	"reservations-api/domain"
 	"context"
 	"net/http"
 	"time"

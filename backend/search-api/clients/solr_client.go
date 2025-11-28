@@ -11,7 +11,7 @@ import (
 	"time"
 )
 
-// SolrClient maneja la comunicación con Apache Solr
+// SolrClient maneja la comunicaciﾃｳn con Apache Solr
 type SolrClient struct {
 	BaseURL string
 	Core    string
@@ -28,10 +28,10 @@ type SolrDocument struct {
 	Location    string   `json:"location"`
 	Price       float64  `json:"price"`
 	DateCreated string   `json:"date_created"`
-	Text        []string `json:"text,omitempty"` // campo multi-valor para búsqueda full-text
+	Text        []string `json:"text,omitempty"` // campo multi-valor para bﾃｺsqueda full-text
 }
 
-// SolrResponse representa la respuesta de una búsqueda en Solr
+// SolrResponse representa la respuesta de una bﾃｺsqueda en Solr
 type SolrResponse struct {
 	ResponseHeader struct {
 		Status int `json:"status"`
@@ -88,18 +88,18 @@ func (s *SolrClient) Index(doc SolrDocument) error {
 	return nil
 }
 
-// Search realiza una búsqueda en Solr con filtros opcionales
+// Search realiza una bﾃｺsqueda en Solr con filtros opcionales
 func (s *SolrClient) Search(query string, filters map[string]interface{}) (*SolrResponse, error) {
 	selectURL := fmt.Sprintf("%s/%s/select", s.BaseURL, s.Core)
 
-	// Construir parámetros de búsqueda
+	// Construir parﾃ｡metros de bﾃｺsqueda
 	params := url.Values{}
 
 	// Query principal
 	if query == "" || query == "*" {
-		params.Set("q", "*:*") // búsqueda de todos los documentos
+		params.Set("q", "*:*") // bﾃｺsqueda de todos los documentos
 	} else {
-		// Búsqueda con wildcards: convertir a minúsculas y agregar wildcard al final
+		// Bﾃｺsqueda con wildcards: convertir a minﾃｺsculas y agregar wildcard al final
 		// Los campos text_general en Solr ya convierten a lowercase
 		wildcardQuery := strings.ToLower(query) + "*"
 		params.Set("q", wildcardQuery)
@@ -131,7 +131,7 @@ func (s *SolrClient) Search(query string, filters map[string]interface{}) (*Solr
 		}
 	}
 
-	// Paginación
+	// Paginaciﾃｳn
 	if page, ok := filters["page"].(int); ok && page > 0 {
 		size := 10 // por defecto
 		if s, ok := filters["size"].(int); ok {
@@ -205,7 +205,7 @@ func (s *SolrClient) Delete(id string) error {
 	return nil
 }
 
-// HealthCheck verifica que Solr esté accesible
+// HealthCheck verifica que Solr estﾃｩ accesible
 func (s *SolrClient) HealthCheck() error {
 	pingURL := fmt.Sprintf("%s/%s/admin/ping", s.BaseURL, s.Core)
 

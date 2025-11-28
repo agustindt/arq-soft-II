@@ -1,7 +1,7 @@
-package clients
+﻿package clients
 
 import (
-	"arq-soft-II/backend/activities-api/domain"
+	"activities-api/domain"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -34,12 +34,12 @@ func NewRabbitMQClient(user, password, host, port, exchange string, repo Activit
 	connStr := fmt.Sprintf("amqp://%s:%s@%s:%s/", user, password, host, port)
 	connection, err := amqp091.Dial(connStr)
 	if err != nil {
-		log.Fatalf("❌ Failed to connect to RabbitMQ: %v", err)
+		log.Fatalf("❁EFailed to connect to RabbitMQ: %v", err)
 	}
 
 	channel, err := connection.Channel()
 	if err != nil {
-		log.Fatalf("❌ Failed to open a channel: %v", err)
+		log.Fatalf("❁EFailed to open a channel: %v", err)
 	}
 
 	// Declarar exchange tipo topic
@@ -53,10 +53,10 @@ func NewRabbitMQClient(user, password, host, port, exchange string, repo Activit
 		nil,      // arguments
 	)
 	if err != nil {
-		log.Fatalf("❌ Failed to declare exchange: %v", err)
+		log.Fatalf("❁EFailed to declare exchange: %v", err)
 	}
 
-	log.Printf("✅ Connected to RabbitMQ - Exchange: %s", exchange)
+	log.Printf("✁EConnected to RabbitMQ - Exchange: %s", exchange)
 
 	return &RabbitMQClient{
 		connection: connection,
@@ -146,13 +146,13 @@ func (r *RabbitMQClient) Close() error {
 	var errRet error
 	if r.channel != nil {
 		if err := r.channel.Close(); err != nil {
-			log.Printf("⚠️  Error closing rabbit channel: %v", err)
+			log.Printf("⚠ Error closing rabbit channel: %v", err)
 			errRet = err
 		}
 	}
 	if r.connection != nil {
 		if err := r.connection.Close(); err != nil {
-			log.Printf("⚠️  Error closing rabbit connection: %v", err)
+			log.Printf("⚠ Error closing rabbit connection: %v", err)
 			errRet = err
 		}
 	}

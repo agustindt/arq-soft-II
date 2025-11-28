@@ -8,7 +8,7 @@
 //   - Create reservations for activities (authenticated users)
 //   - Multi-user group reservations support
 //   - Capacity validation against activity max_capacity
-//   - Status workflow (pendiente → confirmada → cancelada)
+//   - Status workflow (pendiente ↁEconfirmada ↁEcancelada)
 //   - Admin endpoints for reservation management
 //   - Integration with Activities API for capacity checks
 //   - JWT-based authentication and authorization
@@ -27,12 +27,12 @@
 package main
 
 import (
-	"arq-soft-II/backend/reservations-api/clients"
-	"arq-soft-II/backend/reservations-api/config"
-	"arq-soft-II/backend/reservations-api/controllers"
-	"arq-soft-II/backend/reservations-api/middleware"
-	"arq-soft-II/backend/reservations-api/repository"
-	"arq-soft-II/backend/reservations-api/services"
+	"reservations-api/clients"
+	"reservations-api/config"
+	"reservations-api/controllers"
+	"reservations-api/middleware"
+	"reservations-api/repository"
+	"reservations-api/services"
 	"context"
 	"log"
 	"net/http"

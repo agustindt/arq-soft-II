@@ -1,7 +1,7 @@
-package middleware
+﻿package middleware
 
 import (
-	"arq-soft-II/backend/activities-api/utils"
+	"activities-api/utils"
 	"net/http"
 	"strings"
 
