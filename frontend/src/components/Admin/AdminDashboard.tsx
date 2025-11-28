@@ -39,8 +39,14 @@ function AdminDashboard(): JSX.Element {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
+    // Redirect root users to their dedicated panel
+    if (user?.role === "root") {
+      navigate("/root");
+      return;
+    }
+
     // Check if user is admin
-    if (user?.role !== "admin" && user?.role !== "root") {
+    if (user?.role !== "admin") {
       navigate("/dashboard");
       return;
     }
@@ -252,10 +258,10 @@ function AdminDashboard(): JSX.Element {
                     <PeopleIcon sx={{ fontSize: 40, color: "warning.main" }} />
                     <Box>
                       <Typography variant="h4">
-                        {(userStats?.users_by_role?.admin ?? 0) + (userStats?.users_by_role?.moderator ?? 0)}
+                        {(userStats?.users_by_role?.admin ?? 0) + (userStats?.users_by_role?.root ?? 0)}
                       </Typography>
                       <Typography variant="body2" color="textSecondary">
-                        Staff Members
+                        Staff Members (Admin + Root)
                       </Typography>
                     </Box>
                   </Stack>

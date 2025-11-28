@@ -37,7 +37,7 @@ import {
 import { adminService, AdminUser, CreateUserRequest } from "../../services/adminService";
 import { useAuth } from "../../contexts/AuthContext";
 
-const ROLES = ["user", "moderator", "admin", "super_admin", "root"];
+const ROLES = ["user", "admin", "root"];
 
 function UserManagement(): JSX.Element {
   const { user } = useAuth();
@@ -161,12 +161,10 @@ function UserManagement(): JSX.Element {
     switch (role) {
       case "root":
         return "error";
-      case "super_admin":
-        return "warning";
       case "admin":
-        return "secondary";
-      case "moderator":
-        return "info";
+        return "warning";
+      case "user":
+        return "primary";
       default:
         return "default";
     }
@@ -337,11 +335,9 @@ function UserManagement(): JSX.Element {
                 label="Rol"
                 onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
               >
-                {ROLES.map((role) => (
-                  <MenuItem key={role} value={role}>
-                    {role}
-                  </MenuItem>
-                ))}
+                <MenuItem value="user">User</MenuItem>
+                {user?.role === "root" && <MenuItem value="admin">Admin</MenuItem>}
+                {user?.role === "root" && <MenuItem value="root">Root</MenuItem>}
               </Select>
             </FormControl>
           </Stack>
@@ -364,12 +360,11 @@ function UserManagement(): JSX.Element {
               value={editRole}
               label="Rol"
               onChange={(e) => setEditRole(e.target.value)}
+              disabled={user?.role !== "root"}
             >
-              {ROLES.map((role) => (
-                <MenuItem key={role} value={role}>
-                  {role}
-                </MenuItem>
-              ))}
+              <MenuItem value="user">User</MenuItem>
+              {user?.role === "root" && <MenuItem value="admin">Admin</MenuItem>}
+              {user?.role === "root" && <MenuItem value="root">Root</MenuItem>}
             </Select>
           </FormControl>
         </DialogContent>

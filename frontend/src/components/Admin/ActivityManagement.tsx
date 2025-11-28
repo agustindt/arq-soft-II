@@ -47,7 +47,7 @@ function ActivityManagement(): JSX.Element {
   const [toggling, setToggling] = useState<string | null>(null);
 
   useEffect(() => {
-    if (user?.role !== "admin") {
+    if (user?.role !== "admin" && user?.role !== "root") {
       navigate("/dashboard");
       return;
     }

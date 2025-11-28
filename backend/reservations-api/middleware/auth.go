@@ -34,7 +34,7 @@ func AdminOnly(usersAPI string) gin.HandlerFunc {
 		}
 
 		// Verificar el rol directamente del JWT (más eficiente, sin llamada a API)
-		if claims.Role != "admin" && claims.Role != "root" && claims.Role != "super_admin" {
+		if claims.Role != "admin" && claims.Role != "root" {
 			c.JSON(http.StatusForbidden, gin.H{"error": "Admin role required"})
 			c.Abort()
 			return

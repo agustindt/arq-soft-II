@@ -32,9 +32,7 @@ export interface SystemStats {
   inactive_users: number;
   users_by_role: {
     user: number;
-    moderator: number;
     admin: number;
-    super_admin: number;
     root: number;
   };
   recent_registrations: number; // últimos 7 días

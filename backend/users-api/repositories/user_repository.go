@@ -20,11 +20,9 @@ type UserFilter struct {
 
 // UsersByRole groups user counts by their role.
 type UsersByRole struct {
-	User       int64 `json:"user"`
-	Moderator  int64 `json:"moderator"`
-	Admin      int64 `json:"admin"`
-	SuperAdmin int64 `json:"super_admin"`
-	Root       int64 `json:"root"`
+	User  int64 `json:"user"`
+	Admin int64 `json:"admin"`
+	Root  int64 `json:"root"`
 }
 
 // UserStats represents aggregated counters for different user segments.
@@ -209,12 +207,6 @@ func (r *userRepository) GetStats(ctx context.Context) (UserStats, error) {
 		return stats, err
 	}
 	if err := r.db.WithContext(ctx).Model(&models.User{}).Where("role = ?", "admin").Count(&stats.UsersByRole.Admin).Error; err != nil {
-		return stats, err
-	}
-	if err := r.db.WithContext(ctx).Model(&models.User{}).Where("role = ?", "super_admin").Count(&stats.UsersByRole.SuperAdmin).Error; err != nil {
-		return stats, err
-	}
-	if err := r.db.WithContext(ctx).Model(&models.User{}).Where("role = ?", "moderator").Count(&stats.UsersByRole.Moderator).Error; err != nil {
 		return stats, err
 	}
 	if err := r.db.WithContext(ctx).Model(&models.User{}).Where("role = ?", "user").Count(&stats.UsersByRole.User).Error; err != nil {

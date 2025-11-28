@@ -98,7 +98,7 @@ func RequireAnyRole(roles ...string) gin.HandlerFunc {
 }
 
 // hasRole verifica si un usuario tiene un rol específico
-// Implementa una jerarquía simple: super_admin > admin > moderator > user
+// Implementa una jerarquía simple: root > admin > user
 func hasRole(userRole, requiredRole string) bool {
 	// Normalizar roles a minúsculas
 	userRole = strings.ToLower(strings.TrimSpace(userRole))
@@ -111,11 +111,9 @@ func hasRole(userRole, requiredRole string) bool {
 
 	// Jerarquía de roles (roles superiores incluyen permisos de roles inferiores)
 	roleHierarchy := map[string]int{
-		"user":        1,
-		"moderator":   2,
-		"admin":       3,
-		"super_admin": 4,
-		"root":        5,
+		"user":  1,
+		"admin": 2,
+		"root":  3,
 	}
 
 	userLevel, userExists := roleHierarchy[userRole]

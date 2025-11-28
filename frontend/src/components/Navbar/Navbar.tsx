@@ -21,6 +21,7 @@ import {
   Search as SearchIcon,
   BookOnline as BookIcon,
   AdminPanelSettings as AdminIcon,
+  Security as SecurityIcon,
 } from "@mui/icons-material";
 import { useAuth } from "../../contexts/AuthContext";
 
@@ -139,6 +140,7 @@ function Navbar(): JSX.Element {
           >
             My Activities
           </Button>
+          {/* Admin Panel - Solo para admins */}
           {user?.role === "admin" && (
             <Button
               color="inherit"
@@ -159,7 +161,33 @@ function Navbar(): JSX.Element {
                 },
               }}
             >
-              Admin
+              Admin Panel
+            </Button>
+          )}
+
+          {/* Root Panel - Solo para root */}
+          {user?.role === "root" && (
+            <Button
+              color="inherit"
+              startIcon={<SecurityIcon />}
+              onClick={() => navigate("/root")}
+              sx={{
+                backgroundColor:
+                  location.pathname.startsWith("/root")
+                    ? "rgba(255,255,255,0.2)"
+                    : "transparent",
+                borderRadius: 2,
+                px: 2,
+                py: 1,
+                transition: "all 0.2s",
+                "&:hover": {
+                  backgroundColor: "rgba(255,255,255,0.15)",
+                  transform: "translateY(-1px)",
+                },
+                color: "error.light",
+              }}
+            >
+              Root Panel
             </Button>
           )}
           <Button
