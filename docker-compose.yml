@@ -156,9 +156,12 @@ services:
         condition: service_healthy
       users-api:
         condition: service_started
+      activities-api:
+        condition: service_started
     environment:
       PORT: 8080
       USERS_API_URL: http://users-api:8081
+      ACTIVITIES_API_URL: http://activities-api:8082
       MONGO_DB: demo
       MONGO_COLLECTION: reservas
       MONGO_URI: mongodb://mongo:27017/reservasdb

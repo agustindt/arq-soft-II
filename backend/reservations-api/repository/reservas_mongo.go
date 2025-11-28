@@ -168,6 +168,7 @@ func (r *MongoReservasRepository) Update(ctx context.Context, id string, Reserva
 			"actividad":  Reserva.Actividad,
 			"users_id":   Reserva.UsersID,
 			"cupo":       Reserva.Cupo,
+			"schedule":   Reserva.Schedule,
 			"date":       Reserva.Date,
 			"status":     Reserva.Status,
 			"updated_at": time.Now().UTC(), // Actualizar timestamp
@@ -206,4 +207,163 @@ func (r *MongoReservasRepository) Delete(ctx context.Context, id string) error {
 	}
 
 	return nil
+}
+
+// CountActiveReservationsBySchedule cuenta el total de cupos reservados para un horario específico
+// Suma todos los cupos de las reservas activas (no canceladas) para una actividad, horario y fecha
+func (r *MongoReservasRepository) CountActiveReservationsBySchedule(ctx context.Context, activityID string, schedule string, date time.Time) (int, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	// Normalizar la fecha al inicio y fin del día
+	startOfDay := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
+	endOfDay := startOfDay.Add(24 * time.Hour)
+
+	// Filtro: misma actividad, mismo horario, misma fecha, estado != cancelada
+	filter := bson.M{
+		"actividad": activityID,
+		"schedule":  schedule,
+		"date": bson.M{
+			"$gte": startOfDay,
+			"$lt":  endOfDay,
+		},
+		"status": bson.M{"$ne": "cancelada"},
+	}
+
+	// Pipeline de agregación para sumar los cupos
+	pipeline := []bson.M{
+		{"$match": filter},
+		{"$group": bson.M{
+			"_id":   nil,
+			"total": bson.M{"$sum": "$cupo"},
+		}},
+	}
+
+	cursor, err := r.col.Aggregate(ctx, pipeline)
+	if err != nil {
+		return 0, err
+	}
+	defer cursor.Close(ctx)
+
+	// Leer el resultado
+	type Result struct {
+		Total int `bson:"total"`
+	}
+
+	var results []Result
+	if err := cursor.All(ctx, &results); err != nil {
+		return 0, err
+	}
+
+	// Si no hay resultados, significa que no hay reservas activas
+	if len(results) == 0 {
+		return 0, nil
+	}
+
+	return results[0].Total, nil
+}
+
+// ExistsActiveReservation verifica si ya existe una reserva activa (no cancelada) para un usuario específico
+// en una actividad, horario y fecha determinados
+func (r *MongoReservasRepository) ExistsActiveReservation(ctx context.Context, userID int, activityID string, schedule string, date time.Time) (bool, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	// Normalizar la fecha al inicio y fin del día
+	startOfDay := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
+	endOfDay := startOfDay.Add(24 * time.Hour)
+
+	// Buscar reservas activas para este usuario, actividad, horario y fecha
+	filter := bson.M{
+		"users_id": bson.M{"$in": []int{userID}},
+		"actividad": activityID,
+		"schedule":  schedule,
+		"date": bson.M{
+			"$gte": startOfDay,
+			"$lt":  endOfDay,
+		},
+		"status": bson.M{"$ne": "cancelada"},
+	}
+
+	count, err := r.col.CountDocuments(ctx, filter)
+	if err != nil {
+		return false, err
+	}
+
+	return count > 0, nil
+}
+
+// ExistsScheduleConflict verifica si el usuario ya tiene una reserva activa en el mismo horario
+// (independientemente de la actividad) - para evitar que el usuario se inscriba en dos actividades al mismo tiempo
+// Retorna: (existe_conflicto, id_actividad_conflictiva, error)
+func (r *MongoReservasRepository) ExistsScheduleConflict(ctx context.Context, userID int, schedule string, date time.Time) (bool, string, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	// Normalizar la fecha al inicio y fin del día
+	startOfDay := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
+	endOfDay := startOfDay.Add(24 * time.Hour)
+
+	// Buscar cualquier reserva activa para este usuario en el mismo horario y fecha (cualquier actividad)
+	filter := bson.M{
+		"users_id": bson.M{"$in": []int{userID}},
+		"schedule": schedule,
+		"date": bson.M{
+			"$gte": startOfDay,
+			"$lt":  endOfDay,
+		},
+		"status": bson.M{"$ne": "cancelada"},
+	}
+
+	var result dao.Reserva
+	err := r.col.FindOne(ctx, filter).Decode(&result)
+	if err != nil {
+		if errors.Is(err, mongo.ErrNoDocuments) {
+			// No hay conflicto
+			return false, "", nil
+		}
+		return false, "", err
+	}
+
+	// Encontró un conflicto - retornar el ID de la actividad conflictiva
+	return true, result.Actividad, nil
+}
+
+// GetUserActiveReservationsByDate obtiene todas las reservas activas de un usuario en una fecha específica
+// Esto se usa para verificar solapamiento de horarios considerando la duración de las actividades
+func (r *MongoReservasRepository) GetUserActiveReservationsByDate(ctx context.Context, userID int, date time.Time) ([]domain.Reserva, error) {
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	// Normalizar la fecha al inicio y fin del día
+	startOfDay := time.Date(date.Year(), date.Month(), date.Day(), 0, 0, 0, 0, date.Location())
+	endOfDay := startOfDay.Add(24 * time.Hour)
+
+	// Buscar todas las reservas activas del usuario en esa fecha
+	filter := bson.M{
+		"users_id": bson.M{"$in": []int{userID}},
+		"date": bson.M{
+			"$gte": startOfDay,
+			"$lt":  endOfDay,
+		},
+		"status": bson.M{"$ne": "cancelada"},
+	}
+
+	cur, err := r.col.Find(ctx, filter)
+	if err != nil {
+		return nil, err
+	}
+	defer cur.Close(ctx)
+
+	var daoReservas []dao.Reserva
+	if err := cur.All(ctx, &daoReservas); err != nil {
+		return nil, err
+	}
+
+	domainReservas := make([]domain.Reserva, len(daoReservas))
+	for i, daoReserva := range daoReservas {
+		domainReservas[i] = daoReserva.ToDomain()
+	}
+
+	return domainReservas, nil
 }

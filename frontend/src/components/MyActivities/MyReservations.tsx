@@ -32,6 +32,7 @@ import {
   Cancel as CancelIcon,
   Visibility as ViewIcon,
   EventBusy as EventBusyIcon,
+  AccessTime as TimeIcon,
 } from "@mui/icons-material";
 import { reservationsService } from "../../services/reservationsService";
 import { activitiesService } from "../../services/activitiesService";
@@ -228,6 +229,15 @@ function MyReservations(): JSX.Element {
                             <strong>Date:</strong> {formatDateTime(reservation.date)}
                           </Typography>
                         </Box>
+
+                        {reservation.schedule && (
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
+                            <TimeIcon fontSize="small" color="action" />
+                            <Typography variant="body2">
+                              <strong>Schedule:</strong> {reservation.schedule}
+                            </Typography>
+                          </Box>
+                        )}
 
                         {reservation.activity.location && (
                           <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>

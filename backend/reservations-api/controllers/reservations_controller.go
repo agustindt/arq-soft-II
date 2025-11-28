@@ -27,6 +27,9 @@ type ReservasService interface {
 
 	// Delete elimina un Reserva por ID
 	Delete(ctx context.Context, id string) error
+
+	// GetScheduleAvailability retorna la disponibilidad de cada horario para una actividad
+	GetScheduleAvailability(ctx context.Context, activityID string, date time.Time) (map[string]int, error)
 }
 
 // ReservasController maneja las peticiones HTTP para Reservas
@@ -309,6 +312,52 @@ func (c *ReservasController) DeleteReserva(ctx *gin.Context) {
 
 	ctx.JSON(http.StatusOK, gin.H{
 		"message": "Reserva eliminada exitosamente",
+	})
+}
+
+// GetScheduleAvailability maneja GET /activities/:id/availability - Obtiene disponibilidad por horario
+func (c *ReservasController) GetScheduleAvailability(ctx *gin.Context) {
+	activityID := ctx.Param("id")
+	if activityID == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Activity ID parameter is required",
+		})
+		return
+	}
+
+	// Obtener fecha del query parameter (formato YYYY-MM-DD)
+	dateStr := ctx.Query("date")
+	if dateStr == "" {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error": "Date query parameter is required (format: YYYY-MM-DD)",
+		})
+		return
+	}
+
+	// Parsear la fecha
+	date, err := time.Parse("2006-01-02", dateStr)
+	if err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{
+			"error":   "Invalid date format",
+			"details": "Date must be in YYYY-MM-DD format",
+		})
+		return
+	}
+
+	// Obtener disponibilidad
+	availability, err := c.service.GetScheduleAvailability(ctx.Request.Context(), activityID, date)
+	if err != nil {
+		ctx.JSON(http.StatusInternalServerError, gin.H{
+			"error":   "Failed to fetch schedule availability",
+			"details": err.Error(),
+		})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, gin.H{
+		"activity_id":  activityID,
+		"date":         dateStr,
+		"availability": availability,
 	})
 }
 

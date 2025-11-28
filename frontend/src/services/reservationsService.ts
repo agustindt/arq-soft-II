@@ -4,6 +4,7 @@ import {
   ReservationsResponse,
   ReservationResponse,
   CreateReservationRequest,
+  ScheduleAvailability,
   ApiResponse,
 } from "../types";
 
@@ -61,10 +62,11 @@ export const reservationsService = {
     reservationData: CreateReservationRequest
   ): Promise<Reservation> {
     // Map frontend format to backend format
-    // Backend expects: users_id (array), actividad (string), cupo (number), date (ISO string), status (string)
+    // Backend expects: users_id (array), actividad (string), schedule (string), cupo (number), date (ISO string), status (string)
     const backendFormat = {
       users_id: [], // Will be populated by backend from token
       actividad: reservationData.activityId,
+      schedule: reservationData.schedule,
       cupo: reservationData.participants,
       date: reservationData.date,
       status: "Pendiente",
@@ -92,6 +94,20 @@ export const reservationsService = {
   // Delete/Cancel reservation (admin only)
   async deleteReservation(id: string): Promise<void> {
     await reservationsApi.delete(`/reservas/${id}`);
+  },
+
+  // Get schedule availability for an activity on a specific date
+  async getScheduleAvailability(
+    activityId: string,
+    date: string // YYYY-MM-DD format
+  ): Promise<ScheduleAvailability> {
+    const response = await reservationsApi.get<ScheduleAvailability>(
+      `/activities/${activityId}/availability`,
+      {
+        params: { date },
+      }
+    );
+    return response.data;
   },
 
   // Health check

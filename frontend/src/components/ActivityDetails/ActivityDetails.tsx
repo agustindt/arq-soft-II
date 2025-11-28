@@ -32,9 +32,6 @@ import {
   BookOnline as BookIcon,
   FitnessCenter as FitnessIcon,
 } from "@mui/icons-material";
-import { DatePicker } from "@mui/x-date-pickers/DatePicker";
-import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
-import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs, { Dayjs } from "dayjs";
 import { activitiesService } from "../../services/activitiesService";
 import { reservationsService } from "../../services/reservationsService";
@@ -56,12 +53,21 @@ function ActivityDetails(): JSX.Element {
   const [reserving, setReserving] = useState<boolean>(false);
   const [reservationError, setReservationError] = useState<string | null>(null);
   const [reservationSuccess, setReservationSuccess] = useState<boolean>(false);
+  const [selectedSchedule, setSelectedSchedule] = useState<string>("");
+  const [scheduleAvailability, setScheduleAvailability] = useState<{[key: string]: number}>({});
+  const [loadingAvailability, setLoadingAvailability] = useState<boolean>(false);
 
   useEffect(() => {
     if (id) {
       loadActivity();
     }
   }, [id]);
+
+  useEffect(() => {
+    if (activity && reservationDate) {
+      loadScheduleAvailability();
+    }
+  }, [activity, reservationDate]);
 
   const loadActivity = async (): Promise<void> => {
     if (!id) return;
@@ -79,8 +85,27 @@ function ActivityDetails(): JSX.Element {
     }
   };
 
-  const handleReservation = async (): Promise<void> => {
+  const loadScheduleAvailability = async (): Promise<void> => {
     if (!activity || !reservationDate) return;
+
+    setLoadingAvailability(true);
+    try {
+      const dateStr = reservationDate.format('YYYY-MM-DD');
+      const availability = await reservationsService.getScheduleAvailability(
+        activity.id,
+        dateStr
+      );
+      setScheduleAvailability(availability.availability);
+    } catch (err) {
+      console.error("Error loading availability:", err);
+      setScheduleAvailability({});
+    } finally {
+      setLoadingAvailability(false);
+    }
+  };
+
+  const handleReservation = async (): Promise<void> => {
+    if (!activity || !reservationDate || !selectedSchedule) return;
 
     setReserving(true);
     setReservationError(null);
@@ -89,6 +114,7 @@ function ActivityDetails(): JSX.Element {
     try {
       await reservationsService.createReservation({
         activityId: activity.id,
+        schedule: selectedSchedule,
         date: reservationDate.toISOString(),
         participants: participants,
       });
@@ -101,7 +127,7 @@ function ActivityDetails(): JSX.Element {
       }, 2000);
     } catch (err: any) {
       setReservationError(
-        err.response?.data?.message || err.message || "Failed to create reservation"
+        err.response?.data?.details || err.response?.data?.message || err.message || "Failed to create reservation"
       );
     } finally {
       setReserving(false);
@@ -417,19 +443,54 @@ function ActivityDetails(): JSX.Element {
               <Alert severity="error">{reservationError}</Alert>
             )}
 
-            <LocalizationProvider dateAdapter={AdapterDayjs}>
-              <DatePicker
-                label="Select Date"
-                value={reservationDate}
-                onChange={(newValue) => setReservationDate(newValue)}
-                minDate={dayjs()}
-                slotProps={{
-                  textField: {
-                    fullWidth: true,
-                  },
-                }}
-              />
-            </LocalizationProvider>
+            {activity.schedule && activity.schedule.length > 0 && (
+              <Box>
+                <Typography variant="subtitle2" gutterBottom>
+                  Select Schedule
+                </Typography>
+                {loadingAvailability ? (
+                  <Box sx={{ display: 'flex', justifyContent: 'center', p: 2 }}>
+                    <CircularProgress size={24} />
+                  </Box>
+                ) : (
+                  <Stack spacing={1}>
+                    {activity.schedule.map((schedule) => {
+                      const available = scheduleAvailability[schedule] ?? activity.max_capacity;
+                      const isAvailable = available > 0;
+                      const isSelected = selectedSchedule === schedule;
+
+                      return (
+                        <Paper
+                          key={schedule}
+                          sx={{
+                            p: 2,
+                            cursor: isAvailable ? 'pointer' : 'not-allowed',
+                            border: isSelected ? 2 : 1,
+                            borderColor: isSelected ? 'primary.main' : 'divider',
+                            bgcolor: !isAvailable ? 'action.disabledBackground' : 'background.paper',
+                            '&:hover': isAvailable ? {
+                              bgcolor: 'action.hover',
+                            } : {},
+                          }}
+                          onClick={() => isAvailable && setSelectedSchedule(schedule)}
+                        >
+                          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <Typography variant="body1" fontWeight={isSelected ? 'bold' : 'normal'}>
+                              {schedule}
+                            </Typography>
+                            <Chip
+                              label={`${available} / ${activity.max_capacity} available`}
+                              color={available > 5 ? 'success' : available > 0 ? 'warning' : 'error'}
+                              size="small"
+                            />
+                          </Box>
+                        </Paper>
+                      );
+                    })}
+                  </Stack>
+                )}
+              </Box>
+            )}
 
             <TextField
               label="Number of Participants"
@@ -437,16 +498,29 @@ function ActivityDetails(): JSX.Element {
               value={participants}
               onChange={(e) => {
                 const value = parseInt(e.target.value, 10);
-                if (value > 0 && value <= activity.max_capacity) {
+                const maxAllowed = selectedSchedule
+                  ? Math.min(activity.max_capacity, scheduleAvailability[selectedSchedule] ?? activity.max_capacity)
+                  : activity.max_capacity;
+
+                if (value > 0 && value <= maxAllowed) {
                   setParticipants(value);
                 }
               }}
               inputProps={{
                 min: 1,
-                max: activity.max_capacity,
+                max: selectedSchedule
+                  ? Math.min(activity.max_capacity, scheduleAvailability[selectedSchedule] ?? activity.max_capacity)
+                  : activity.max_capacity,
               }}
               fullWidth
-              helperText={`Max: ${activity.max_capacity} participants`}
+              disabled={!selectedSchedule && activity.schedule && activity.schedule.length > 0}
+              helperText={
+                selectedSchedule
+                  ? `Available: ${scheduleAvailability[selectedSchedule] ?? 0} spots`
+                  : activity.schedule && activity.schedule.length > 0
+                  ? "Select a schedule first"
+                  : `Max: ${activity.max_capacity} participants`
+              }
             />
 
             <Paper sx={{ p: 2, bgcolor: "grey.50" }}>
@@ -480,7 +554,7 @@ function ActivityDetails(): JSX.Element {
           <Button
             variant="contained"
             onClick={handleReservation}
-            disabled={reserving || !reservationDate || participants < 1}
+            disabled={reserving || !reservationDate || participants < 1 || (activity.schedule && activity.schedule.length > 0 && !selectedSchedule)}
             startIcon={reserving ? <CircularProgress size={20} /> : <BookIcon />}
           >
             {reserving ? "Processing..." : "Confirm Reservation"}
