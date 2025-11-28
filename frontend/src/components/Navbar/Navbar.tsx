@@ -153,7 +153,7 @@ function Navbar(): JSX.Element {
           >
             My Activities
           </Button>
-          {/* Admin Panel - Solo para admins, root y super_admin */}
+          {/* Admin Panel - Solo para admins y root */}
           {isAdmin && (
             <Button
               color="inherit"
